@@ -1,0 +1,79 @@
+Tryb nieblokujący gniazd
+=========================
+
+1. Działanie gniazd w domyślnym trybie
+=======================================
+
+Zazwyczaj wywołanie funkcji 'write' powoduje skopiowanie danych podanych
+w argumencie do bufora w systemie operacyjnym. Następuje powrót z funkcji
+i nasz program może działać dalej, a w tle następuje stopniowe wysyłanie
+przez sieć danych z bufora.
+
+Co jednak się stanie, gdy dane do funkcji 'write' będą napływały szybciej,
+niż będzie możliwe ich wysyłanie przez sieć? Wówczas bufor wysyłania
+zapełni się i przy wywołaniu funkcji 'write' nastąpi zablokowanie programu,
+aż do momentu, gdy dane z argumentu będą mogły zostać skopiowane do bufora. 
+W tym czasie nasz program (wątek programu) nie będzie mógł robić nic innego,
+na przykład obsługiwać pozostałych połączeń. Problem ten występuje
+szczególnie w sytuacji, gdy głównym zadaniem naszego programu jest wysyłanie
+dużych ilości danych, a także gdy program po drugiej stronie zachowuje się
+dziwacznie: wysyła do nas różne żądania i w ogóle nie odbiera tego, co
+mu wysyłamy (wtedy może nawet nastąpić całkowite zawieszenie naszego
+programu).
+
+Częściowo pomaga użycie funkcji 'poll' i sprawdzenie, czy dla danego gniazda
+jest ustawiona flaga POLLOUT (możliwość zapisania danych). Częściowo,
+dlatego że obecność tej flagi oznacza jednak jedynie, że bufor nie jest
+całkiem pełny – a nie, że całe dane podane do funkcji write się w nim
+zmieszczą.
+
+2. Ustawianie limitu czasu na zapis
+====================================
+
+Jednym ze sposobów na radzenie sobie z opisanym wyżej problemem jest
+ustawienie maksymalnego czasu, jaki może działać funkcja 'write'. Można to
+zrobić, wywołując:
+
+  setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (void *)&timeout, 
+             sizeof(timeout))
+
+gdzie 'sock' to deskryptor gniazda, natomiast 'timeout' jest zmienną typu
+'timeval' zawierającą limit czasu, który chcemy ustawić (podobnie, jako
+trzeci argument podając SO_RCVTIMEO, możemy ustawić limit czasu działania
+funkcji 'read'). Jeśli nie uda się zakończyć zapisu w ustawionym czasie,
+funkcja 'write' kończy się. Zwraca wtedy liczbę zapisanych bajtów (jeśli
+część udało się zapisać – wtedy przy kolejnym wywołaniu możemy zapisać
+resztę), albo -1, ustawiając błąd w 'errno' na EAGAIN lub EWOULDBLOCK. 
+Rozwiązanie takie zastosowane zostało w pliku 'echo-client-timeout.c'.
+
+3. Tryb nieblokujący
+=====================
+
+Innym podejściem jest przełączenie gniazda w tryb nieblokujący. Robimy to
+poleceniem:
+
+  fcntl(sock, F_SETFL, O_NONBLOCK)
+
+gdzie 'sock' to deskryptor gniazda. W tym trybie każde wywołanie funkcji
+'read' i 'write' natychmiast się kończy. Jeśli nie da się nic
+odebrać lub wysłać natychmiast, zwracają one -1, ustawiając błąd w 'errno' na
+EAGAIN lub EWOULDBLOCK. Natomiast funkcja 'write' może zapisać część danych
+i zwrócić ich rozmiar (wtedy kolejnym wywołaniem 'write' możemy wysłać
+resztę). Tryb nieblokujący został wykorzystany w pliku
+'echo-server-nonblocking.c'.
+
+W trybie nieblokującym inne jest także zachowanie funkcji 'connect': nie
+czeka ona na nawiązanie połączenia, tylko kończy się od razu, a połączenie
+jest nawiązywane w tle.
+
+4. Ćwiczenie
+=============
+
+1) Poeksperymentuj z dołączonymi programami. Uruchom je na różnych
+   komputerach i przekieruj do klienta duży plik. Zobacz, po ilu wysłanych
+   bajtach, nieodbieranych przez drugą stronę, 'write' się blokuje. 
+   Przekonaj się, że rzeczywiście 'write' (na gnieździe nieblokującym lub
+   z ustawionym limitem czasu) może zakończyć się po wysłaniu części danych.
+   Ile (w praktyce) co najmniej danych do wysłania udaje się zakolejkować
+   poleceniem 'write' po tym, gdy 'poll' ustawi flagę POLLOUT?
+

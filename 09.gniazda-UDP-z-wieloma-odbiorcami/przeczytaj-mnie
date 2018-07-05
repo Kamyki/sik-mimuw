@@ -1,0 +1,135 @@
+                       KOMUNIKACJA GRUPOWA UDP / IPv6
+                       ==============================
+
+Podstawowym celem tych zajęć jest pokazanie, jak wysyłać datagramy UDP do wielu
+odbiorców. Ponadto proponujemy zapoznanie się z różnicami, które pojawiają się,
+gdy chcemy używać gniazd z IPv6.
+
+1. Rozsyłanie datagramów do wielu odbiorców
+===========================================
+
+IPv4 przewiduje możliwość wysyłania kopii tego samego datagramu jednocześnie do
+wielu odbiorców. W tym celu zdefiniowano specjalne adresy. Sposób realizacji
+takiego wysyłania zależy od użytej warstwy łącza.
+
+Adres rozgłoszeniowy zawiera same jedynki, czyli w notacji kropkowej jest to
+adres 255.255.255.255. Ten adres wskazuje wszystkie interfejsy w bieżącej
+podsieci. Aby wysłać datagram do wszystkich interfejsów w konkretnej podsieci,
+można użyć adresu ukierunkowanego rozgłaszania, który ma same jedynki
+w miejscach, gdzie w masce podsieci są zera. W laboratorium komputerowym
+używane są adresy z puli 10.1.0.0/20 (maska 255.255.240.0), czyli adresem
+ukierunkowanego rozgłaszania jest 10.1.15.255.
+
+Pula adresów 224.0.0.1 -- 239.255.255.255 przewidziana jest do wykorzystania
+jako adresy grupowe. Wiele interfejsów może mieć przydzielony adres z tej puli.
+Intencja jest taka, aby można było wysłać kopię datagramu jednocześnie do
+wszystkich interfejsów współdzielących ten sam adres grupowy.
+
+W IPv6 nie przewidziano możliwości rozgłaszania. Adresy grupowe przydziela się
+z puli ff00::/8, czyli są to adresy, które mają jedynkę na początkowych 8
+bitach. Pula ta jest podzielona na części dla różnych obszarów rozgłaszania
+(szczegóły: https://en.wikipedia.org/wiki/Multicast_address#IPv6,
+https://tools.ietf.org/html/rfc4291#section-2.7). Na potrzeby niniejszych
+zajęć skorzystamy z adresów z obszaru obejmującego organizację, ff08::/16.
+
+Ponieważ UDP jest bardzo prostym rozszerzeniem IP, to powyższe jest słuszne
+również dla datagramów UDP.
+
+2. Programy dla IPv4
+====================
+
+Program odbierający datagramy UDP uruchamia się tak:
+
+    multi-recv multicast_dotted_address local_port
+
+Przyjmuje on dwa parametry:
+
+    multicast_dotted_address -- adres grupowy, na którym ma nasłuchiwać,
+    local_port               -- port, na którym ma nasłuchiwać.
+
+Adres grupowy musi być podany w notacji kropkowej. Program nie akceptuje nazw
+domenowych. Oprócz podanego adresu program nasłuchuje również na wszystkich
+adresach przydzielonych maszynie. Przykładowe wywołanie:
+
+   ./multi-recv 239.10.11.12 40000
+
+Program wysyłający datagramy UDP uruchamia się tak:
+
+    multi-send remote_address remote_port
+
+Przyjmuje on dwa parametry:
+
+    remote_address -- adres, na który wysyłane są datagramy,
+    remote_port    -- port, na który wysyłane są datagramy.
+
+Adres musi być podany w notacji kropkowej. Program nie akceptuje nazw
+domenowych. Przykładowe wywołania:
+
+    ./multi-send 255.255.255.255 40000
+    ./multi-send 10.1.15.255 40000
+    ./multi-send 239.10.11.12 40000
+
+Programu tego można też użyć, aby wysłać na adres jednostkowy maszyny (w tym
+przypadku red01):
+
+    ./multi-send 10.1.1.21 40000
+
+3. Programy dla IPv6
+====================
+
+Program odbierający datagramy UDP uruchamia się tak:
+
+    multi-recv6 multicast_colon_address local_port
+
+Przyjmuje on dwa parametry:
+
+    multicast_colon_address -- adres grupowy, na którym ma nasłuchiwać,
+    local_port              -- port, na którym ma nasłuchiwać.
+
+Adres grupowy musi być podany w notacji z dwukropkami. Program nie akceptuje
+nazw domenowych. Oprócz podanego adresu program nasłuchuje również na
+wszystkich adresach przydzielonych maszynie. Przykładowe wywołanie:
+
+   ./multi-recv6 ff18::4242 40000
+
+Program wysyłający datagramy UDP uruchamia się tak:
+
+    multi-send6 remote_address remote_port
+
+Przyjmuje on dwa parametry:
+
+    remote_address -- adres, na który wysyłane są datagramy,
+    remote_port    -- port, na który wysyłane są datagramy.
+
+Adres musi być podany w notacji z dwukropkami. Program nie akceptuje nazw
+domenowych. Przykładowe wywołanie:
+
+    ./multi-send6 ff18::4242 40000
+
+Programu tego można też użyć, aby wysłać na adres jednostkowy maszyny (w tym
+przypadku red01):
+
+    ./multi-send6 2001:6a0:5001:1:21d:9ff:fe04:e7b4 40000
+
+4. API
+======
+
+Większość funkcji została już omówiona na poprzednich zajęciach. Pojawiają się
+trzy nowe:
+
+  setsockopt -- konfigurowanie przeróżnych parametrów gniazd,
+
+  inet_aton, inet_pton -- konwersja adresów z postaci czytelnej dla człowieka
+                          na postać binarną.
+
+5. Zadania
+==========
+
+1. Zmodyfikuj kod programu multi-recv, tak aby wypisywał adres i numer portu,
+   z którego otrzymał dane.
+
+2. Wykonaj dla programu multi-recv6 zadanie opisane w punkcie 1.
+
+3. Czy program multi-recv6 działa z programem multi-send?
+   Czy program multi-recv działa z programem multi-send6?
+   Poeksperymentuj.

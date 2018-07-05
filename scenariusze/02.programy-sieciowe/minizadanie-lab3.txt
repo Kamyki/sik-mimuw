@@ -1,0 +1,12 @@
+Celem zadania jest zbadanie, jakie pakiety są wysyłane i otrzymywane podczas
+wykonywania polecenia ping (np. ping -c 1 www.google.com) za pomocą
+programu wireshark użytego na maszynie wirtualnej (rozwiązania nie
+korzystające z maszyny wirtualnej, np. na własnym laptopie, nie będą
+akceptowane). Należy zaprezentować prowadzącemu zajęcia ekran programu
+wireshark, na którym widoczne będą (jako jedyne lub prawie jedyne) pakiety
+przesłane w związku z wykonanym poleceniem ping. Proszę skrótowo powiedzieć,
+jaki jest sens każdego z tych pakietów.
+
+UWAGI: 
+Rozwiązania można prezentować tylko w trakcie zajęć swojej grupy ćwiczeniowej
+Zadanie warte jest 0,3 punktu.

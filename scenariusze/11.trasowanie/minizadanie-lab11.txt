@@ -1,0 +1,10 @@
+
+* Skonfiguruj 4 maszyny wirtualne zgodnie z ćwiczeniem 1 ze scenariusza.
+
+* Dodaj możliwość korzystania z nazw maszyn (H1, H2, R1, R2) - np. ping H2 na maszynie H1 powinien się udać.
+
+* Zapisz konfigurację sieci w plikach konfiguracyjnych (/etc/network/interfaces).
+
+UWAGI:
+Rozwiązania można prezentować tylko w trakcie zajęć.
+Zadanie warte jest 0,3 punktu.

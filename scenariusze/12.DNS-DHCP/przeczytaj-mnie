@@ -1,0 +1,321 @@
+
+                           DNS i DHCP 
+                          ============
+
+I. DNS - Domain Name System
+----------------------------
+
+1. Wprowadzenie 
+
+Głównym zadaniem systemu DNS jest odwzorowywanie nazw hostów
+na adresy IP (odwzorowanie proste) i adresów IP na nazwy (odwzorowanie 
+odwrotne). Zapewnia on również inne usługi takie jak tworzenie aliasów. 
+
+2. Jak działa DNS?
+
+DNS to system typu klient-serwer. Serwery wczytują dane z plików i używają 
+ich do wysyłania odpowiedzi na pytania klientów i innych serwerów.
+Z punktu widzenia klienta protokół jest dość prosty. Zapytanie jest 
+kierowane do lokalnego serwera DNS, który odsyła odpowiedź.
+
+* Uruchom program wireshark na maszynie H1. Zacznij od podłączenia maszyny H1 
+do sieci rzeczywistej: upewnij się, że interfejs eth0 korzysta z mostkowanej
+karty sieciowej.
+
+H1:~# ifup eth0
+
+lub 
+
+H1:~# dhclient eth0
+
+Na lokalnym systemie wykonaj
+
+$ ssh -Y mimuw@<adres IP przydzielony eth0 na H1>
+
+W sesji ssh uruchom program wireshark. W czasie śledzenia użyj nazw domenowych 
+np.
+
+H1:~# ping onet.pl
+H1:~# dig wikipedia.com
+
+W próbce z sieci znajdź zapytania i odpowiedzi DNS (filtr dns) 
+Jaki protokół transportowy jest wykorzystywany?
+Na jaki adres i port są wysyłane pytania?  
+Jaki jest format komunikatu zapytania i odpowiedzi?
+Jakie rekordy zostały zawarte w odpowiedzi?
+
+Serwery DNS tworzą hierarchiczną strukturę i komunikują się ze sobą,
+aby w sposób rekurencyjny lub iteracyjny przetworzyć zapytanie klienta.
+
+* Wykonaj polecenie 
+
+H1:~# dig +trace www.cs.uni.wroc.pl
+
+Przeanalizuj drogę, jaką przechodzi zapytanie pomiędzy serwerami nazw 
+różnych poziomów. Wskaż serwery główne (odpowiedzialne za domenę .),
+serwery domen najwyższego poziomu (tu: .pl) oraz serwery autorytatywne
+dla poszczególnych stref. Które z serwerów biorą udział w rozwiązywaniu
+tej nazwy? Naszkicuj schemat komunikacji między nimi.
+
+Aby zmniejszyć opóźnienia i liczbę komunikatów w sieci, serwery DNS
+buforują mapowania nazwa - adres IP.
+
+3. Instalacja i konfiguracja serwera nazw
+
+Wybraliśmy serwer bind, który jest jednym z najpopularniejszych 
+serwerów DNS (ok. 80 % rynku).
+
+Każda domena powinna mieć co najmniej dwa serwery DNS - jest to wymóg 
+instytucji oferujących możliwość rejestracji domen. Jeden z serwerów określa 
+się jako podstawowy (master, primary), a drugi - jako zapasowy (slave, secondary).
+Jednak naszych domen nie będziemy łączyć z rzeczywistą hierarchią nazw 
+(nie będziemy ich rejestrować), dlatego dla uproszczenia uruchomimy
+tylko jeden, podstawowy serwer nazw.
+
+H1:~# apt-get update 
+H1:~# apt-get install bind9 
+(na pytania odpowiadamy y)
+
+Pliki konfiguracyjne bind znajdują się w katalogu /etc/bind. Głównymi plikami 
+są named.conf i pliki do niego dołączone. Znajdują się w nich podstawowe opcje 
+usługi oraz informacje na temat obsługiwanych stref.
+
+Naszym zadaniem będzie stworzenie domeny o nazwie siklab.mimuw.edu.pl
+dla sieci złożonej z 4 maszyn wirtualnych utworzonej na poprzednich zajęciach.
+
+* Do pliku /etc/bind/named.conf.local należy dodać:
+
+zone "siklab.mimuw.edu.pl" {
+     type master;
+     file "/etc/bind/siklab.mimuw.edu.pl";
+};
+
+zone "0.10.10.in-addr.arpa" {
+     type master;
+     file "/etc/bind/0.10.10.in-addr.arpa";
+};
+
+zone "0.11.10.in-addr.arpa" {
+     type master;
+     file "/etc/bind/0.11.10.in-addr.arpa";
+};
+
+zone "0.12.10.in-addr.arpa" {
+     type master;
+     file "/etc/bind/0.12.10.in-addr.arpa";
+};
+
+* Baza danych DNS to zestaw tak zwanych plików strefowych, zawierających
+rekordy zasobów.
+
+Plik strefy siklab.mimuw.edu.pl:
+--
+$TTL	1h
+@ 	IN 	SOA 	ns.siklab.mimuw.edu.pl. root.ns.siklab.mimuw.edu.pl. (
+		1 	; Serial
+		604800 	; Refresh
+		86400 	; Retry
+		2419200 ; Expire
+		604800) ; Negative Cache TTL
+
+		IN 	NS 	ns
+
+localhost 	IN 	A 	127.0.0.1
+ns 		IN 	A       10.10.0.10
+H1		IN 	A       10.10.0.10
+R1 		IN 	A       10.10.0.1
+R1 		IN 	A	10.12.0.1
+R2 		IN 	A       10.12.0.2
+R2 		IN 	A       10.11.0.1
+H2 		IN 	A       10.11.0.10 
+--
+
+Plik strefy definiuje okres ważności wpisów, nazwę domeny, nazwę podstawowego
+serwera DNS oraz kto tą domeną zarządza (pierwszą kropkę w adresie, po root, 
+należy traktować jako znak @).
+
+Serial - numer seryjny domeny, powinien on być zwiększany wraz z każdą jej 
+modyfikacją, często w formacie YYYYMMDDn.
+
+Refresh - informacja dla serwera zapasowego, co jaki czas ma sprawdzać 
+aktualność swoich danych.
+
+Retry - jeżeli nie udało się połączyć z serwerem podstawowym po upływie czasu 
+odświeżania, to w tym polu znajduje się informacja dla serwera zapasowego, 
+co ile ma ponawiać próbę nawiązania połączenia.
+
+Expire - czas, po jakim serwer zapasowy uzna dane w strefie za nieaktualne.
+
+Negative Cache TTL - jest to czas, przez jaki serwery będą przechowywały 
+negatywne odpowiedzi.
+
+Podstawowy format rekordu to: [nazwa] [ttl] [klasa] typ dane
+
+Rekordy typu:
+
+- NS określają serwery nazw dla danej domeny. Pole dane zawiera 
+kanoniczną nazwę hosta, który jest serwerem strefy.
+
+- A (trzon bazy DNS) odwzorowują nazwy komputerów na adresy IPv4.
+Pole dane powinno zawierać adres IP w notacji kropkowej.
+
+- AAAA odwzorowują nazwy komputerów na adresy IPv6.
+
+- CNAME odwzorowują aliasy na kanoniczną nazwę hosta. Dzięki temu 
+rekordowi możliwe jest utworzenie wielu nazw tego samego hosta. 
+Pole dane powinno zawierać kanoniczną nazwę hosta.
+
+- MX służą do definiowania serwera poczty.
+
+- TXT umożliwiają dodanie dowolnego tekstu.
+
+- PTR odwzorowują adresy IP na nazwy (patrz niżej)
+
+Plik strefy odwzorowywania odwrotnego 0.10.10.in-addr.arpa:
+--
+$TTL	1h
+@	IN	SOA	siklab.mimuw.edu.pl. root.ns.siklab.mimuw.eu.pl. (
+        	1       ; Serial
+        	604800  ; Refresh
+          	86400   ; Retry
+          	2419200 ; Expire
+          	604800) ; Negative Cache TTL
+
+;
+	 IN	NS 	ns.siklab.mimuw.edu.pl.
+10	 IN	PTR 	H1.siklab.mimuw.edu.pl.
+1	 IN	PTR 	R1.siklab.mimuw.edu.pl.
+--
+
+* Stwórz analogiczne pliki dla pozostałych podsieci.
+
+* Zrestartuj serwer DNS:
+
+H1:~# /etc/init.d/bind9 restart
+
+Poprawność naszej konfiguracji możemy sprawdzić, analizując plik
+/var/log/syslog oraz korzystając z poleceń:
+
+H1:~# named-checkconf
+(nic = ok)
+
+H1:~# named-checkzone siklab siklab.mimuw.edu.pl
+
+4. Konfiguracja klientów DNS
+
+* Konfiguracja klienta DNS znajduje się w pliku /etc/resolv.conf:
+--
+nameserver 10.10.0.10
+domain siklab.mimuw.edu.pl
+search siklab.mimuw.edu.pl
+--
+Wiersz nameserver zawiera nazwy lokalnych serwerów nazw, które rozwiązują 
+nazwy hostów w imieniu klienta. Odpytywany jest zawsze pierwszy serwer, a jeśli 
+nie można się z nim połączyć, to kolejne.
+W wierszu search znajduje się lista domen, które należy odpytać, jeśli nazwa 
+hosta nie została podana w pełnej postaci. 
+Wiersz domain zawiera nazwę lokalnej domeny.
+
+* Na wszystkich 4 maszynach uaktualnij pliki /etc/resolv.conf
+
+Uwaga: Jeżeli na H1 nie wyłączymy interfejsu eth0, to serwer DHCP będzie 
+zmieniać adres domyślnego serwera nazw w czasie odnawiania dzierżawy dla eth0.
+
+5. Test konfiguracji 
+
+Usuń wpisy dotyczące maszyn H1, H2, R1, R2 z plików /etc/hosts.
+Jeżeli konfiguracja jest poprawna, to wszystkie poniższe polecenia powinny zakończyć się sukcesem:
+
+H2:~# ping R1.siklab.mimuw.edu.pl
+H2:~# ping R1
+R1:~# ping R2
+R2:~# ping H1
+H1:~# ping H2
+H2:~# ping ns
+
+
+II. DHCP - Dynamic Host Configuration Protocol
+-----------------------------------------------
+
+1. Wprowadzenie
+
+Protokół DHCP umożliwia automatyczną konfigurację sieciową hosta 
+podłączającego się do sieci. Od serwera DHCP może on uzyskać swój adres IP
+i maskę sieci, adres domyślnej bramy, adres lokalnego serwera nazw i wiele 
+innych parametrów.
+
+Parametry sieciowe są dzierżawione na określony czas (godziny, dni). Klient 
+zgłasza się do serwera w celu odnowienia dzierżawy. Jeżeli tego nie zrobi
+dzierżawa wygasa i serwer może przypisać adres (lub inny parametr) innemu 
+klientowi.
+
+2. Jak działa DHCP?
+
+Korzystając z programu wireshark na maszynie H1, przeanalizuj protokół DHCP
+w czasie wykonywania:
+
+H1:~# dhclient eth0
+
+Zidentyfikuj 4 etapy konfiguracji:
+
+- wykrywanie serwera 
+- oferta
+- żądanie
+- potwierdzenie
+
+Na jaki adres/port i z jakiego adresu/portu wysyłane są poszczególne 
+komunikaty? Jaki jest adres serwera DHCP dla sieci laboratoryjnej?
+Jakie parametry sieciowe zostały skonfigurowane?
+
+Czy możesz teraz wykonać ping H2 z H1? Dlaczego?
+
+Powodem jest zmiana domyślnego serwera nazw przy automatycznej konfiguracji 
+eth0. Po przywróceniu pierwotnej zawartości pliku /etc/resolv.conf ping H2 
+powinno się udać.
+
+3. Konfiguracja serwera DHCP obejmuje:
+
+- określenie domyślnego i maksymalnego okresu dzierżawy 
+
+default-lease-time 600;
+max-lease-time 7200;
+
+- podanie podsieci, w których serwer zarządza adresami wraz z pulą adresów do rozdzielenia
+i ewentualnie adresu domyślnej bramy
+
+subnet 10.11.0.0 netmask 255.255.255.0 {
+  range 10.11.0.2 10.11.0.20;
+  option routers 10.11.0.1;
+}
+
+- zdefiniowanie listy adresów IP, które mają być przydzielane statycznie:
+ 
+host R2 {
+  hardware ethernet XX:XX:XX:XX:XX:XX;
+  fixed-address 10.11.0.1;
+}
+
+- inne opcje, które serwer może przekazać klientom, takie jak 
+nazwa domeny i adres serwera nazw:
+
+option domain-name "siklab.mimuw.edu.pl"; 
+option domain-name-servers 10.10.0.10; 
+
+4. DHCP a DNS
+
+Jaki może być problem przy jednoczesnym zastosowaniu serwera DNS do 
+rozwiązywania nazw maszyn w sieci lokalnej i serwera DHCP do dynamicznego 
+przydzielania im adresów IP?
+
+Jednym ze sposobów rozwiązania problemu statycznych baz DNS i dynamicznej 
+konfiguracji adresów IP przez DHCP jest przypisanie ogólnych nazw dla każdego 
+dzierżawionego adresu i przydzielanie ich wraz z adresami IP. Inna możliwość
+to skonfigurowanie dhcpd w taki sposób, aby aktualizował bazę DNS przy 
+rozdzielaniu adresów. Jeszcze inna, to zastosowanie protokołu multicast Domain 
+Name System (mDNS).
+
+
+
+
+
+

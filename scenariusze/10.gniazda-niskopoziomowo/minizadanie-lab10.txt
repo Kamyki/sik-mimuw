@@ -1,0 +1,12 @@
+
+* Zmodyfikuj program rawping, aby nie kończył się po pierwszej poprawnej odpowiedzi.
+
+* Dodaj do programu wypisywanie pola TTL w odebranych pakietach.
+
+* Dodaj pomiar czasu (round trip time, RTT). Tworząc pakiet, w danych
+  zapisz aktualny czas (gettimeofday). Odbierając pakiet, zanotuj czas 
+  odbioru i oblicz RTT.
+
+UWAGI:
+Rozwiązania można prezentować tylko w trakcie zajęć.
+Zadanie warte jest 0,3 punktu.

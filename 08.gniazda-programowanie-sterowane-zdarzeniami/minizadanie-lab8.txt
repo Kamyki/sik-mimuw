@@ -1,0 +1,18 @@
+
+Zmodyfikuj klienta w ten sposób, aby przyjmował dodatkowy parametr
+będący nazwą pliku. Klient otwiera plik i przesyła jego nazwę do 
+serwera. Następnie w pętli odczytuje dane z pliku i przesyła je 
+do serwera. Po zakończeniu przesyłania oczekuje na potwierdzenie 
+otrzymania danych od serwera.
+
+Zmodyfikuj serwer w ten sposób, aby zapisywał dane do plików 
+o nazwach składających się z nazwy podanej przez klienta 
+z dodanym prefiksem "copy-".
+
+Po otrzymaniu całego pliku serwer wypisuje na standardowe wyjście
+jego nazwę oraz rozmiar, po czym odsyła klientowi potwierdzenie.
+ 
+UWAGI:
+Rozwiązania można prezentować tylko w trakcie zajęć.
+Zadanie warte jest 0,3 punktu.
+

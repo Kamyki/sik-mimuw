@@ -1,0 +1,638 @@
+mZajęcia mają na celu zapoznanie z programami sieciowymi pozwalającymi
+na diagnozowanie i sterowanie lokalną konfiguracją sieciową oraz na
+podstawowy kontakt z serwerami w sieci.
+
+Przedstawiać będziemy tutaj następujące programy i pliki:
+1.  ifconfig
+2.  route
+3.  arp
+4.  pliki konfigurujące sieć
+5.  ping
+6.  traceroute/mtr
+7.  telnet
+8.  nc
+9.  nmap
+10. nslookup/dig
+11. netstat
+12. tcpdump/wireshark
+
+Zacznijmy od uruchomienia maszyny wirtualnej i zalogowania się na nią
+za pomocą ssh. Polecenia będziemy wykonywać przede wszystkim w maszynie
+wirtualnej. Większość z nich wymaga praw roota, więc od razu na wstępie
+zróbmy
+
+$ sudo su -
+
+Polecenia nie wymagające praw roota (a więc generalnie te, które tylko 
+wypisują jakieś informacje, a nie zmieniają żadnych ustawień) warto spróbować 
+wykonać także na lokalnym komputerze oraz na students.
+
+1. Proszę uruchomić program /sbin/ifconfig. Powinno ukazać się coś w stylu:
+
+eth0      Link encap:Ethernet  HWaddr 08:00:27:47:0d:a8
+          inet addr:10.0.2.15  Bcast:10.0.2.255  Mask:255.255.255.0
+          inet6 addr: fe80::a00:27ff:fe47:da8/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:68 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:75 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000
+          RX bytes:9144 (9.1 KB)  TX bytes:10298 (10.2 KB)
+
+eth1      Link encap:Ethernet  HWaddr 08:00:27:62:8c:4b
+          inet6 addr: fe80::a00:27ff:fe62:8c4b/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:11 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000
+          RX bytes:0 (0.0 B)  TX bytes:2178 (2.1 KB)
+
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+Prowadzący powinien omówić wszystkie widoczne napisy. Warto pamiętać, że
+pakiety errors to otrzymane pakiety błędne (np. z nieprawidłową sumą
+kontrolną), pakiety dropped to pakiety porzucone na przykład w związku
+z błędem lub przepełnieniem bufora.  Pakiety overruns to pakiety wstawione do
+nośnika sieci jednocześnie z pakietem z innej maszyny, co powoduje pewien
+rodzaj błędu. RX to dane otrzymane, a TX to dane wysłane. MTU to "maximum
+transmission unit", maksymalny rozmiar pakietu danych, który można przesłać;
+zależy on od protokołu, np. dla Ethernetu wynosi 1500. Wartość txqueuelen to
+długość kolejki (liczba pakietów, które tam się mieszczą).
+
+Polecenie ifconfig może służyć do zmiany parametrów interfejsu, np.
+
+$/sbin/ifconfig eth0 broadcast 10.0.255.255
+
+ustanawia adres rozgłaszania na 10.0.255.255. Ważna też jest
+możliwość wyłączania i uruchamiania danego interfejsu, np:
+
+$/sbin/ifconfig eth0 down
+
+$/sbin/ifconfig eth0 up
+
+Bardzo ciekawy efekt daje zrobienie tego pierwszego w sesji terminala
+uzyskanej za pomocą programu ssh.
+
+Uwaga: wszystkie powyższe instrukcje, oprócz wykonania ifconfig wyłącznie
+z odczytem, można wykonać tylko, gdy ma się prawa roota.
+
+Więcej szczegółów:
+
+$ man ifconfig
+
+Aha, warto może jeszcze przed przejściem do następnego punktu wykonać
+
+$/sbin/ip link
+
+2. Program /sbin/route jest bardzo podobny do ifconfig. Tym razem jednak
+   zmieniamy/oglądamy zawartość tablicy tras. Wywołanie bezparametrowe tego
+   programu daje wynik w stylu:
+
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+10.0.2.0        *               255.255.255.0   U     0      0        0 eth0
+
+lub w stylu
+
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         spider1.mimuw.e 0.0.0.0         UG    0      0        0 eth0
+10.1.0.0        *               255.255.240.0   U     0      0        0 eth0
+
+Tytuł oznajmia nam, że mamy do czynienia z tablicą tras w jądrze systemu. Potem
+pojawiają się kolejne kolumny tabeli:
+
+Destination - adres docelowy (sieci lub komputera)
+Gateway - bramka, przez którą pakiety trafiają do celu (* oznacza
+          nieustawioną wartość)
+Genmask - maska sieci dla sieci docelowej
+Flags   - znaczniki opisujące rodzaj trasy (U = up, G = gateway i in.)
+Metric  - odległość do celu (w etapach, 0 - oznacza bieżącą sieć)
+Ref     - liczba odwołań do trasy (w Linuksie nieużywane, równe 0)
+Use     - liczba sięgnięć po daną trasę do tablicy (ostatnio są tutaj
+          w Linuksie bardzo małe wartości, gdyż gniazda używają
+          własnej tablicy)
+Iface   - interfejs, do którego będą przesyłane pakiety - zwykle eth0,
+          lo, wlan0
+
+localnet - oznacza sieć lokalną
+loopback - oznacza adres pętli zwrotnej
+default  - oznacza domyślną trasę
+
+Podobnie jak w wypadku poprzedniego programu podanie odpowiednich
+opcji pozwala nie tylko na czytanie, ale i na zapisywanie wartości do
+tablicy, np:
+
+$/sbin/route add -net 127.0.0.0 netmask 255.255.255.0 dev lo
+
+powoduje dodanie do tablicy tras pozycji dla sieci pętli zwrotnej.
+
+Więcej szczegółów:
+
+$ man route
+
+Podobną funkcjonalność do programu /sbin/route ma program /sbin/ip wywołany
+z parametrem route:
+
+$ /sbin/ip route
+
+3. Program /usr/sbin/arp (lub /sbin/arp) służy do zarządzania pamięcią arp,
+   czyli pamięcią adresów fizycznych maszyn podłączonych do sieci lokalnej -
+   przeważnie Ethernetu. Proste, bezparametrowe wywołanie daje w wyniku np.:
+
+Address                 HWtype  HWaddress           Flags Mask            Iface
+melkor.mimuw.edu.pl     ether   08:00:20:75:D9:63   C                     eth0
+jaskier.mimuw.edu.pl            (incomplete)                              eth0
+zaa.mimuw.edu.pl        ether   08:00:20:1D:D3:D4   C                     eth0
+lipa.mimuw.edu.pl       ether   00:C0:F0:16:92:E2   C                     eth0
+spider12.mimuw.edu.pl   ether   00:00:EF:06:0D:CC   C                     eth0
+
+Widzimy tutaj kolumny:
+
+Address   - to nazwa komputera
+HWtype    - rodzaj sprzętu odpowiadającego danemu adresowi
+            (np. ether, arcnet, pronet ...)
+HWaddress - adres sprzętowy
+Flags     - znaczniki (C - pełna pozycja, M - stała pozycja, P -
+            pozycja udostępniana przy proxy)
+Mask      - maska używana przy proxy (Linux nie obsługuje)
+Iface     - interfejs, przez który sięgamy do danego komputera
+
+Więcej szczegółów:
+
+$ man arp
+$ man 7 arp
+
+Zwróćmy uwagę, że jeśli usuniemy jakiś wpis za pomocą "arp -d", to i tak za
+jakiś czas sam się pojawi (szczególnie jeśli spróbujemy połączyć się z danym
+adresem).
+
+I jeszcze jeden mały kroczek. Wykonajmy
+
+$ /sbin/ip neighbour
+
+4. Kilka ciekawych plików
+
+- /etc/hosts - zawiera adresy komputerów, dla których nie trzeba odwoływać
+  się do systemu nazw, aby się z nimi połączyć.
+- /etc/services - zawiera listę przyporządkowującą numery portów poszczególnym
+  usługom sieciowym.
+- /etc/resolv.conf - zawiera konfigurację komputerów, które podają nam
+  nazwy maszyn.
+
+Więcej szczegółów:
+
+$ man hosts
+$ man services
+$ man resolv.conf
+
+5. Program ping służy zasadniczo do diagnozowania sieci. Najprostsza
+   forma diagnozy to sprawdzenie, jaki jest ruter naszej sieci
+   lokalnej za pomocą /sbin/route i napisanie (w maszynie wirtualnej)
+
+$ ping 10.0.2.2
+
+gdzie 10.0.2.2 jest (zapewne) adresem naszego rutera. Wypisuje się tutaj taki
+tekst
+
+PING 10.0.2.2 (10.0.2.2) 56(84) bytes of data.
+64 bytes from 10.0.2.2: icmp_seq=1 ttl=63 time=0.378 ms
+64 bytes from 10.0.2.2: icmp_seq=2 ttl=63 time=0.442 ms
+64 bytes from 10.0.2.2: icmp_seq=3 ttl=63 time=0.330 ms
+^C
+--- 10.0.2.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 1998ms
+rtt min/avg/max/mdev = 0.330/0.383/0.442/0.048 ms
+
+przy czym lista wierszy ze statystykami może być dłuższa
+w zależności od tego, jak długo nie wcisnęliśmy Ctrl-C. Pierwszy
+wiersz zawiera nazwę komputera (podana w wierszu wywołania, ale
+z dolepioną nazwą domeny), jego adres IP oraz liczbę wysyłanych
+oktetów danych. Potem następują wiersze ze statystykami
+poszczególnych wysłanych pakietów. Na końcu następuje statystyka
+całej sesji.
+
+Mamy tutaj jednak dostępne wiele interesujących opcji takich jak:
+
+$ ping -c5 10.0.2.2
+
+Co oznacza wysłanie i odebranie 5 pakietów.
+
+$ ping -s 100 10.0.2.2
+
+Co oznacza wysłanie i odebranie pakietów o rozmiarze 100 oktetów.
+Jeśli chcemy wykonać ping do dalszej maszyny należy najpierw w menu
+Machine (Maszyna) maszyny wirtualnej wybrać Preferences (Ustawienia) /
+Network (Sieć) i tam dla Karty 1 ustawić
+"Mostkowana karta sieciowa (bridged)" (ewentualnie można pozostawić kartę 1
+bez zmian, a skonfigurować w ten sposób kartę 2). Po tej operacji należy na
+maszynie wykonać poniższe polecenie (w celu przeładowania konfiguracji):
+
+$ ifdown eth0; ifup eth0
+
+Teraz powinno zadziałać nawet:
+
+$ ping www.google.pl
+
+Uwaga: Ponieważ wtedy adres IP jest przydzielany przez wydziałowy DHCP,
+to maszyny wirtualne muszą mieć unikalne adresy MAC. W przypadku problemu
+należy spróbować zmienić MAC. Aby połączyć się z maszyną wirtualną za pomocą
+SSH, trzeba wtedy użyć standardowego portu 22 i przydzielonego przez DHCP
+adresu IP.
+
+Więcej szczegółów:
+
+$ man ping
+
+6. Programy /usr/sbin/traceroute i /usr/bin/mtr służą do pokazywania trasy,
+   jaką pakiety przebywają od naszego komputera do komputera wskazanego
+   w parametrze (uwaga: karta sieciowa musi być w trybie bridged, zob. ping):
+
+$ /usr/sbin/traceroute www.google.com
+traceroute to www.google.com (173.194.69.105), 30 hops max, 60 byte packets
+ 1  * * *
+ 2  172.16.1.1 (172.16.1.1)  2.797 ms  3.366 ms  3.548 ms
+ 3  192.168.22.31 (192.168.22.31)  35.063 ms  35.096 ms  34.820 ms
+ 4  Telkab1-do-ASTER.net.aster.pl (94.75.84.250)  35.822 ms  35.801 ms  36.089 ms
+ 5  de-cix10.net.google.com (80.81.192.108)  62.556 ms  75.287 ms  75.693 ms
+ 6  209.85.255.170 (209.85.255.170)  72.409 ms  66.837 ms  74.275 ms
+ 7  72.14.239.60 (72.14.239.60)  81.825 ms  49.205 ms 72.14.236.20 (72.14.236.20)  45.182 ms
+ 8  209.85.242.187 (209.85.242.187)  53.713 ms 209.85.240.223 (209.85.240.223)  52.903 ms  52.928 ms
+ 9  209.85.240.154 (209.85.240.154)  69.722 ms 209.85.240.88 (209.85.240.88)  77.504 ms 209.85.240.154 (209.85.240.154)  89.192 ms
+10  64.233.174.55 (64.233.174.55)  76.468 ms  83.624 ms 216.239.48.53 (216.239.48.53)  83.894 ms
+11  * * *
+12  bk-in-f105.1e100.net (173.194.69.105)  73.089 ms  68.949 ms  70.367 ms
+
+Gwiazdka (*) oznacza albo że komputer jest niedostępny, albo że komputer
+nie obsługuje protokołu, z którego korzysta program traceroute. Program
+mtr też pokazuje trasy w sieci, ale podaje lepsze statystyki:
+
+HOST: sikvm                       Loss%   Snt   Last   Avg  Best  Wrst StDev
+  1. 10.0.2.2                      0.0%     5    0.5   0.4   0.3   0.5   0.1
+  2. 172.16.1.1                    0.0%     5    2.3   2.1   1.6   2.4   0.3
+  3. 192.168.22.31                 0.0%     5   38.9  24.4  16.4  38.9  10.4
+  4. Telkab1-do-ASTER.net.aster.p  0.0%     5   36.3  24.9  14.9  36.9  10.8
+  5. de-cix10.net.google.com       0.0%     5   57.8  57.6  40.2  78.3  15.7
+  6. 209.85.255.170                0.0%     5   66.2  61.4  43.9  87.2  17.3
+  7. 72.14.239.60                  0.0%     5   67.7  49.8  43.1  67.7  10.3
+  8. 209.85.240.223                0.0%     5   92.4  70.1  53.1  92.4  16.8
+  9. 209.85.240.88                 0.0%     5   79.3  62.9  56.4  79.3   9.4
+ 10. 64.233.174.55                 0.0%     5   59.0  60.9  54.5  77.2   9.2
+ 11. ???                          100.0     5    0.0   0.0   0.0   0.0   0.0
+ 12. bk-in-f104.1e100.net          0.0%     5   59.6  61.6  54.7  75.1   7.8
+
+Więcej szczegółów:
+
+$ man traceroute
+$ man mtr
+
+7. Program telnet służy do łączenia się za pomocą TCP i TELNET-u
+   z odpowiednim komputerem. Zwykle używa się go do ustanawiania sesji
+   pracy zdalnej, np:
+
+$telnet students
+
+To w zasadzie nie zadziała, bo już w dzisiejszych czasach raczej
+telnetu się nie używa. Można jednak wykorzystać go do połączenia
+się z dowolną usługą. Na przykład:
+
+$telnet ftp.icm.edu.pl 21
+
+Wyświetla odpowiedź serwera zawierającą różne informację. Warto wpisać tam
+USER ftp
+PASS ftp
+HELP
+Potem można wpisać Ctrl-] i quit.
+
+Ciekawe wydaje się polecenie
+
+$telnet mail.mimuw.edu.pl 25
+
+Potem, pilnie uważając, by nie obrazić demonów wadliwą interpunkcją lub
+niewprawną ortografią, warto wpisać takie rzeczy:
+
+helo mail.mimuw.edu.pl
+mail from: <mojadres@students.mimuw.edu.pl>
+rcpt to: <mojadres@students.mimuw.edu.pl>
+data
+Date: 17 Feb 07 21:21:21
+From: mojadres@students.mimuw.edu.pl
+To: mojadres@students.mimuw.edu.pl
+Subject: temat wiadomosci
+
+tresc wiadomosci
+
+.
+
+Zwróćmy uwagę, że linijki do "data" to polecenia do serwera, natomiast od
+tego miejsca zaczyna się wiadomość, a konkretnie jej nagłówek (możemy tu
+wpisać cokolwiek, a wiadomość i tak dojdzie).
+Oczywiście należy obserwować odpowiedzi serwera. Stąd możemy się właśnie
+dowiedzieć, czy nie dokonaliśmy obrazy oraz na ile obraza była skuteczna.
+Na do widzenia wpisuje się
+
+quit
+
+Więcej szczegółów:
+
+$ man telnet
+
+8. Program nc (netcat) podobnie jak telnet umożliwia przesyłanie danych
+   tekstowych przez sieć. Może jednak także służyć jako serwer. Proszę go
+   uruchomić w następujący sposób:
+
+$ nc -l -p 1234
+
+Mamy dzięki temu ustawiony serwer na porcie 1234. Teraz możemy mu
+coś wysłać, uruchamiając klienta:
+
+$ nc 127.0.0.1 1234
+
+i wpisując na jego konsoli, co nam się podoba (lub nie podoba).
+Połączenie z jakimś serwerem WWW można zrealizować tak
+
+$ echo -ne "GET / HTTP/1.0\r\n\r\n" | nc -q 1 -v www.mimuw.edu.pl 80
+
+To narzędzie przydaje się, bo pozwala na prostą diagnostykę
+tworzonych przez siebie programów sieciowych. Szczególnie,
+gdy już mamy serwer, a nie mamy klienta lub odwrotnie.
+
+Więcej szczegółów:
+
+$ man nc
+
+9. Proszę uruchomić program /usr/bin/nmap w następujący sposób
+
+$ nmap -A localhost
+
+Dowiemy się z tego, jakie serwery działają na bieżącym komputerze oraz
+jaki jest jego system operacyjny. Można się też tego dowiedzieć o innych
+komputerach widocznych w sieci. Z tym programem należy uważać, bo można
+dostać po łapach od administratora sieci.
+
+Aby sprawdzić, na których komputerach w labie uruchomiony jest serwer SSH 
+(czyli na których załączony jest linux), możemy wykonać polecenie:
+
+$ nmap -p 22 {red,pink,orange,brown,yellow,khaki,green,cyan,blue,violet}{00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17}
+
+Więcej szczegółów:
+
+$ man nmap
+
+10. Program dig służy do zdobywania informacji o nazwach komputerów.
+    Program ten łączy się z serwerem nazw DNS i podaje informacje
+    o domenach oraz komputerach.
+
+$ dig
+
+; <<>> DiG 9.2.3 <<>>
+;; global options:  printcmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 30555
+;; flags: qr rd ra; QUERY: 1, ANSWER: 13, AUTHORITY: 0, ADDITIONAL: 1
+
+;; QUESTION SECTION:
+;.                              IN      NS
+
+;; ANSWER SECTION:
+.                       238923  IN      NS      e.root-servers.net.
+.                       238923  IN      NS      f.root-servers.net.
+.                       238923  IN      NS      g.root-servers.net.
+.                       238923  IN      NS      h.root-servers.net.
+.                       238923  IN      NS      i.root-servers.net.
+.                       238923  IN      NS      j.root-servers.net.
+.                       238923  IN      NS      k.root-servers.net.
+.                       238923  IN      NS      l.root-servers.net.
+.                       238923  IN      NS      m.root-servers.net.
+.                       238923  IN      NS      a.root-servers.net.
+.                       238923  IN      NS      b.root-servers.net.
+.                       238923  IN      NS      c.root-servers.net.
+.                       238923  IN      NS      d.root-servers.net.
+
+;; ADDITIONAL SECTION:
+j.root-servers.net.     325323  IN      A       192.58.128.30
+
+;; Query time: 11 msec
+;; SERVER: 10.1.2.9#53(10.1.2.9)
+;; WHEN: Sun Feb 13 16:05:52 2005
+;; MSG SIZE  rcvd: 244
+
+Co jest zapisem opisującym serwery nazw dla domeny "." (czyli korzenia
+drzewa nazw). W tym wypadku dane pochodzą od serwera o adresie IP
+10.1.2.9. Serwer ten został wybrany, ponieważ był wpisany do pliku
+/etc/resolv.conf.
+
+Możemy zapytać się o to samo innego serwera, np.:
+
+$ dig @ns.mimuw.edu.pl
+
+Możemy zapytać się o konkretną nazwę, jaki adres IP jej odpowiada:
+
+$ dig students.mimuw.edu.pl A
+
+; <<>> DiG 9.7.0-P1 <<>> students.mimuw.edu.pl A
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 40157
+;; flags: qr aa rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 4, ADDITIONAL: 8
+
+;; QUESTION SECTION:
+;students.mimuw.edu.pl.		IN	A
+
+;; ANSWER SECTION:
+students.mimuw.edu.pl.	86400	IN	A	10.1.0.3
+
+;; AUTHORITY SECTION:
+mimuw.edu.pl.		86400	IN	NS	paranoja.mimuw.edu.pl.
+mimuw.edu.pl.		86400	IN	NS	intra-ns2.mimuw.edu.pl.
+mimuw.edu.pl.		86400	IN	NS	cob.mimuw.edu.pl.
+mimuw.edu.pl.		86400	IN	NS	intra-ns.mimuw.edu.pl.
+
+;; ADDITIONAL SECTION:
+cob.mimuw.edu.pl.	86400	IN	A	10.1.0.128
+cob.mimuw.edu.pl.	86400	IN	AAAA	2001:6a0:5001:1::9
+intra-ns.mimuw.edu.pl.	86400	IN	A	10.0.0.2
+intra-ns.mimuw.edu.pl.	86400	IN	AAAA	2001:6a0:5001::2
+paranoja.mimuw.edu.pl.	86400	IN	A	10.2.0.2
+paranoja.mimuw.edu.pl.	86400	IN	AAAA	2001:6a0:5001:2::2
+intra-ns2.mimuw.edu.pl.	86400	IN	A	10.1.0.2
+intra-ns2.mimuw.edu.pl.	86400	IN	AAAA	2001:6a0:5001:1::2
+
+;; Query time: 1 msec
+;; SERVER: 10.1.0.2#53(10.1.0.2)
+;; WHEN: Fri Feb 17 13:38:50 2012
+;; MSG SIZE  rcvd: 319
+
+Lub o konkretny adres IP, jakiej nazwie on odpowiada:
+
+$ dig -x 10.1.0.3
+
+Można też zapytać się o nazwy pojawiające się w adresach pocztowych:
+
+$ dig mimuw.edu.pl MX
+
+Wszystkie informacje wyświetlamy poleceniem:
+
+$ dig mimuw.edu.pl ANY
+
+Więcej szczegółów:
+
+$ man dig
+
+Alternatywnie można pobawić się programem nslookup. Zmianę typu z A na MX
+uzyskuje się tutaj, pisząc
+
+> set type=MX
+
+zmianę serwera nazw
+
+> server ns.mimuw.edu.pl
+
+Wychodzi się przez Ctrl-D.
+
+Więcej szczegółów:
+
+$ man nslookup
+
+11. Program netstat służy do oglądania stanu połączeń sieciowych,
+    a właściwie otwartych gniazdek. Wystarczy napisać
+
+$netstat
+
+aby uzyskać informacje w stylu
+
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State
+tcp        0      0 sikvm.local:ssh         10.0.2.2:54696          ESTABLISHED
+Active UNIX domain sockets (w/o servers)
+Proto RefCnt Flags       Type       State         I-Node   Path
+unix  2      [ ]         DGRAM                    2414     @/org/kernel/udev/udevd
+unix  7      [ ]         DGRAM                    3050     /dev/log
+unix  3      [ ]         STREAM     CONNECTED     3935
+unix  3      [ ]         STREAM     CONNECTED     3934
+unix  3      [ ]         STREAM     CONNECTED     3854     /var/run/dbus/system_bus_socket
+unix  3      [ ]         STREAM     CONNECTED     3853
+unix  3      [ ]         STREAM     CONNECTED     3829     /var/run/dbus/system_bus_socket
+unix  3      [ ]         STREAM     CONNECTED     3828
+unix  3      [ ]         STREAM     CONNECTED     3816     /var/run/dbus/system_bus_socket
+unix  3      [ ]         STREAM     CONNECTED     3815
+unix  2      [ ]         DGRAM                    3814
+unix  2      [ ]         DGRAM                    3785
+unix  2      [ ]         DGRAM                    3432
+unix  2      [ ]         DGRAM                    3431
+unix  3      [ ]         STREAM     CONNECTED     3127     /var/run/dbus/system_bus_socket
+unix  3      [ ]         STREAM     CONNECTED     3126
+unix  3      [ ]         STREAM     CONNECTED     3119
+unix  3      [ ]         STREAM     CONNECTED     3118
+unix  2      [ ]         DGRAM                    3115
+unix  3      [ ]         STREAM     CONNECTED     3064     /var/run/dbus/system_bus_socket
+unix  3      [ ]         STREAM     CONNECTED     3063
+unix  3      [ ]         STREAM     CONNECTED     3062
+unix  3      [ ]         STREAM     CONNECTED     3061
+unix  3      [ ]         DGRAM                    2446
+unix  3      [ ]         DGRAM                    2445
+unix  3      [ ]         STREAM     CONNECTED     2397     @/com/ubuntu/upstart
+unix  3      [ ]         STREAM     CONNECTED     2396
+
+Powyższy wydruk pokazuje stan połączeń:
+
+Proto - to rodzaj protokołu, przeważnie: tcp - połączenia sieciowe za pomocą
+        protokołu tcp, udp - protokołu udp, unix - gniazda  wewnątrz systemu
+        operacyjnego
+Recv-Q - oktety nie przyjęte przez programy
+Send-Q - oktety nie potwierdzone
+Local Address - adres lokalny
+Foreign Address - adres odległy
+State - stan połączenia
+I-Node - i-node
+Path - ścieżka, przez którą proces jest połączony z gniazdem
+
+Za pomocą netstat można uzyskiwać informacje podobne do uzyskiwanych za pomocą
+ifconfig:
+
+$netstat -i eth0
+
+lub route:
+
+$netstat -r
+
+Bardzo ważne i często przydatne jest polecenie
+
+$ netstat -p
+
+pozwala się dowiedzieć, jaki proces obsługuje dane połączenie.
+Przydaje się też
+
+$ netstat -l -t
+
+które wypisuje wyłącznie serwery TCP działające na bieżącej maszynie.
+
+Więcej szczegółów:
+
+$ man netstat
+
+12. Program tcpdump służy do oglądania ruchu w sieci:
+
+$ /usr/sbin/tcpdump -i eth0
+
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), capture size 96 bytes
+20:56:57.264616 IP sikvm.local.ssh > 10.0.2.2.47171: Flags [P.], seq 3284010896:3284011088, ack 11022615, win 19805, length 192
+20:56:57.265624 IP 10.0.2.2.47171 > sikvm.local.ssh: Flags [.], ack 192, win 65535, length 0
+20:56:57.267723 IP sikvm.local.49529 > dns2.tpsa.pl.domain: 62028+ PTR? 2.2.0.10.in-addr.arpa. (39)
+20:56:57.337743 IP dns2.tpsa.pl.domain > sikvm.local.49529: 62028 NXDomain* 0/1/0 (106)
+20:56:57.439785 IP sikvm.local.mdns > 224.0.0.251.mdns: 0 PTR (QM)? 2.2.0.10.in-addr.arpa. (39)
+
+5 packets captured
+21 packets received by filter
+0 packets dropped by kernel
+
+Pozwala on na śledzenie, jakie pakiety docierają do lokalnego komputera.
+Można zażyczyć sobie, aby wypisywał informacje tylko o niektórych
+protokołach, portach itp. Na przykład
+
+$ /usr/sbin/tcpdump -i eth0 tcp
+
+daje tylko pakiety protokołu TCP, zaś
+
+$ /usr/sbin/tcpdump -i eth0 tcp port 80
+
+lub
+
+$ /usr/sbin/tcpdump tcp port http
+
+wyświetla tylko połączenia WWW.
+
+Więcej szczegółów:
+
+$ man tcpdump
+
+Dużo ciekawsze jest jednak narzędzie /usr/bin/wireshark.
+Najpierw trzeba się upewnić, że za pomocą ssh możemy przekazywać
+połączenia X-ów. Zapewnia się to poleceniem
+
+$ ssh -Y mimuw@localhost -p 2001
+
+wykonanym na maszynie gospodarza wirtualnej maszyny. Potem trzeba
+wywołać /usr/bin/wireshark. Pojawi się okienko, w którym należy wybrać
+link pt. "Pseudo-device that captures on all interfaces"
+(lub wybrać przycisk Start obok tego napisu po naciśnięciu ikony pod
+menu File). Potem z menu Filter wybrać HTTP. Dobrze jest na jakiejś
+konsoli maszyny wirtualnej uruchomić
+
+$ links http://www.google.pl
+
+żeby było widać jakieś połączenia HTTP. Pokaże się kilka wierszy z danymi.
+Na jednym z nich nacisnąć prawym klawiszem myszy i wybrać z menu
+"Follow TCP Stream". Potem można podziwiać i bawić się na różne sposoby. 
+
+
+sox -S "bensound-dubstep.mp3" -r 44100 -b 16 -e signed-integer -c 2 -t raw - | pv -q -L $((44100*4)) | ./sikradio-sender -a 239.10.11.12 -n "Radio Napady"
+
+./sikradio-reciever -b 524228| play -t raw -c 2 -r 44100 -b 16 -e signed-integer --buffer 32768 C

@@ -1,0 +1,13 @@
+$TTL	1h
+@	IN	SOA	siklab.mimuw.edu.pl. root.ns.siklab.mimuw.edu.pl. (
+        	1       ; Serial
+        	604800  ; Refresh
+          	86400   ; Retry
+          	2419200 ; Expire
+          	604800) ; Negative Cache TTL
+
+;
+	 IN	NS 	ns.siklab.mimuw.edu.pl.
+1	 IN	PTR 	R1.siklab.mimuw.edu.pl.
+2	 IN	PTR 	R2.siklab.mimuw.edu.pl.
+

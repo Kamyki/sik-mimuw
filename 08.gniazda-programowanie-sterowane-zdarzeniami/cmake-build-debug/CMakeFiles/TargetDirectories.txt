@@ -1,0 +1,4 @@
+/Users/kamil/dev/SIK/08.gniazda-programowanie-sterowane-zdarzeniami/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/Users/kamil/dev/SIK/08.gniazda-programowanie-sterowane-zdarzeniami/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/kamil/dev/SIK/08.gniazda-programowanie-sterowane-zdarzeniami/cmake-build-debug/CMakeFiles/server.dir
+/Users/kamil/dev/SIK/08.gniazda-programowanie-sterowane-zdarzeniami/cmake-build-debug/CMakeFiles/client.dir

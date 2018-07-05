@@ -1,0 +1,21 @@
+1. Utworzyć dwie maszyny wirtualne i uruchomić je jednocześnie.
+2. Na pierwszej z nich ustawić na urządzeniu eth1:
+   - adres IP 10.0.5.1,
+   - maskę sieci 255.255.255.0,
+   - adres rozgłaszania 10.0.5.255.
+3. Na drugiej z nich ustawić na urządzeniu eth1:
+   - adres IP 10.0.5.2,
+   - maskę sieci 255.255.255.0,
+   - adres rozgłaszania 10.0.5.255.
+4. Wykonać na obu polecenie ifconfig pokazujące wynik działania.
+5. Na pierwszej maszynie dopisać do pliku /etc/hosts linijkę powodującą, że
+   druga maszyna będzie rozpoznawana pod nazwą "maszyna2".
+6. Skopiować plik /etc/hosts z pierwszej maszyny na drugą maszynę pod nazwę
+   /tmp/hosts (za pomocą scp, za pomocą nazwy zdefiniowanej w punkcie
+   powyżej).
+7. Wypisać zawartość pliku /tmp/hosts na drugiej maszynie.
+8. Pokazać wykonane komendy i wyniki ich działania prowadzącemu zajęcia.
+
+UWAGI: 
+Rozwiązania można prezentować tylko w trakcie zajęć swojej grupy ćwiczeniowej.
+Zadanie warte jest 0,3 punktu.

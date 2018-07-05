@@ -1,0 +1,1 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  -Wall -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/odbiornik.dir/odbiornik.cpp.o CMakeFiles/odbiornik.dir/menu.cpp.o CMakeFiles/odbiornik.dir/buffor.cpp.o CMakeFiles/odbiornik.dir/argument_parser.cpp.o CMakeFiles/odbiornik.dir/err.cpp.o  -o odbiornik 

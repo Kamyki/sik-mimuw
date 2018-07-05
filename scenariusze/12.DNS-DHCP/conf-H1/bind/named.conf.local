@@ -1,0 +1,34 @@
+//
+// Do any local configuration here
+//
+
+// Consider adding the 1918 zones here, if they are not used in your
+// organization
+//include "/etc/bind/zones.rfc1918";
+
+zone "0.10.10.in-addr.arpa" {
+     type master;
+     file "/etc/bind/0.10.10.in-addr.arpa";
+};
+
+zone "0.11.10.in-addr.arpa" {
+     type master;
+     file "/var/cache/bind/0.11.10.in-addr.arpa";
+     allow-update { 10.11.0.1; 10.12.0.2; }; 
+};
+
+zone "0.12.10.in-addr.arpa" {
+     type master;
+     file "/etc/bind/0.12.10.in-addr.arpa";
+};
+
+zone "siklab.mimuw.edu.pl" {
+      type master;
+      file "/etc/bind/siklab.mimuw.edu.pl";
+};
+
+zone "siklab2.mimuw.edu.pl" {
+     type master;
+     file "/var/cache/bind/siklab2.mimuw.edu.pl";
+     allow-update { 10.11.0.1; 10.12.0.2; };
+};

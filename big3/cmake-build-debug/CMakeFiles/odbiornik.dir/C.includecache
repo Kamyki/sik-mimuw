@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/kamil/dev/SIK/big3/argument_parser.c
+stdbool.h
+-
+stdlib.h
+-
+getopt.h
+-
+string.h
+-
+stdio.h
+-
+ctype.h
+-
+argument_parser.h
+/Users/kamil/dev/SIK/big3/argument_parser.h
+err.h
+/Users/kamil/dev/SIK/big3/err.h
+
+/Users/kamil/dev/SIK/big3/argument_parser.h
+stdint.h
+-
+
+/Users/kamil/dev/SIK/big3/err.h
+

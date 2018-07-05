@@ -1,0 +1,8 @@
+
+* Skonfiguruj serwer DNS na maszynie H1 i zmień odpowiednio konfigurację pozostałych 
+maszyn zgodnie z częścią I scenariusza.
+
+UWAGI:
+Rozwiązania można prezentować tylko w trakcie zajęć.
+Zadanie warte jest 0,3 punktu.
+

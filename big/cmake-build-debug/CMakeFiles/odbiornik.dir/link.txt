@@ -1,0 +1,1 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/odbiornik.dir/odbiornik.c.o CMakeFiles/odbiornik.dir/menu.c.o CMakeFiles/odbiornik.dir/buffor.c.o CMakeFiles/odbiornik.dir/argument_parser.c.o CMakeFiles/odbiornik.dir/err.c.o  -o odbiornik 

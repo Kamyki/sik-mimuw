@@ -1,0 +1,332 @@
+* Sieci komputerowe, laboratorium 1
+
+Celem dzisiejszego laboratorium jest przygotowanie maszyn wirtualnych,
+dzięki którym każdy uczestnik zajęć będzie mógł dysponować (niewielką)
+prywatną siecią, którą będzie mógł dowolnie konfigurować.
+
+Uwaga! W poniższych opisach użyto angielskich nazw menu. Zależnie od
+lokalnych ustawień niektóre z nich mogą być przetłumaczone na język polski.
+
+** Importowanie i uruchamianie maszyny
+
+Zaczniemy od najprostszego podejścia, zainstalowania maszyny
+przygotowanej przez kogoś innego. Skorzystamy z dostępnej pod adresem
+
+http://students.mimuw.edu.pl/~accek/SIK/sikvm.ova
+
+maszyny przygotowanej przez prowadzących. Plik ten można ściągnąć na
+swoje konto (np. przez przeglądarkę lub programem wget) albo, jeśli akurat
+korzystamy z komputerów w laboratorium, dostać się do niego bezpośrednio:
+
+/home/staff/iinf/accek/public_html/SIK/sikvm.ova
+
+Plik ova to spakowany, przenośny między programami obraz dysku maszyny
+i jej ustawień. Dla zainteresowanych szersze informacje o tym formacie,
+w tym listę programów go obsługujących, można znaleźć tu:
+
+http://en.wikipedia.org/wiki/Open_Virtualization_Format
+
+My będziemy używać programu VirtualBox, głównie z powodu tego, że to
+właśnie on jest zainstalowany w laboratorium. Uruchamia się go, pisząc
+na konsoli:
+
+VirtualBox
+
+Pojawia się okienko z listą maszyn wirtualnych po lewej stronie, pustą,
+jeśli nie korzystaliśmy wcześniej z tego programu (jeśli korzystaliśmy,
+to pewnie warto przejść co najmniej do punktu o logowaniu się przez SSH,
+bo zaimportować maszynę już się zapewne umie). Zamiast klikać w duży napis
+New wybieramy Import Appliance z menu File, a tam podświetlony przycisk
+Choose i wybieramy plik, który chcemy zaimportować czyli sikvm.ova. Po
+kliknięciu Next przechodzimy do ekranu z ustawieniami, które chwilowo
+pozostawiamy bez zmian i klikamy Import. Po kilkudziesięciu sekundach
+(przynajmniej w laboratorium Cyan) import kończy się powodzeniem, a maszyna
+pojawia się na liście w stanie Powered Off.
+
+Uwaga! Rozpakowany obraz naszej maszyny zajmuje około gigabajta. Warto
+mieć tyle wolnego miejsca na dysku przed przystąpieniem do importowania
+maszyny, bo w przeciwnym wypadku VirtualBox wyświetla strasznie
+nieprzyjemne okienko z opisem błędu zbliżonym do:
+
+Failed to import appliance /home/.../sikvm.ova.
+
+Could not create the clone medium '/home/.../VirtualBox VMs/sikvm2016-disk1.vmdk'.
+
+VMDK: cannot write allocated data block in
+'/home/.../VirtualBox VMs/sikvm2016-disk1.vmdk' (VERR_DEV_IO_ERROR).
+
+Trzeba też wiedzieć, że obraz dysku naszej maszyny może urosnąć aż do
+2 gigabajtów. Gdy miejsce na koncie skończy się podczas pracy z
+maszyną, to zostanie ona wstrzymana aż do czasu udostępnienia miejsca
+na dysku. Niestety, wznowienie maszyny z tego stanu nie zawsze się
+udaje, a czasem (zwykle?) maszyna zostaje dość poważnie uszkodzona.
+Zdecydowanie zalecane jest więc unikanie braku miejsca na dysku podczas
+używania maszyn wirtualnych.
+
+Po upewnieniu się, że nie brakuje nam miejsca na dysku, możemy wybrać
+na liście maszynę i śmiało kliknąć zieloną strzałkę z podpisem Start.
+Albo dwukrotnie kliknąć na nazwie maszyny na liście, albo nacisnąć
+Enter, albo... Na ekranie pojawi się czarne okienko o tytule
+"sikvm2016 - Oracle VM VirtualBox" i okienko dialogowe z informacją o
+włączonym automatycznym przechwytywaniu klawiatury. Warto zapoznać się
+z jego zawartością, a już na pewno zapamiętać, że wciśnięcie prawego
+klawisza Ctrl może nam w czymś pomóc. Po wciśnięciu OK czarne okienko
+może zmienić kształt, a po chwili wyświetli się kolejne okienko
+dialogowe informujące o tym, że nasza maszyna nie obsługuje "mouse
+pointer integration", co jest zresztą prawdą. Po zamknięciu tego
+okienka (i ewentualnym odczekaniu chwili) we wcześniej pustym, czarnym
+oknie pojawi się kilka napisów i kursor mrugający w wierszu:
+
+sikvm login:
+
+Należy tam wpisać - login "mimuw" i takie samo hasło (bez znaków 
+cudzysłowu). Następnie pojawi się zwykły linuksowy znak zachęty, a my 
+możemy zacząć korzystać z naszego nowego "komputera". W szczególności 
+możemy nabyć prawa administratora:
+
+sudo su -
+
+i robić różne, zabawne rzeczy niedostępne dla zwykłych śmiertelników
+(w tym nas jako użytkowników komputerów laboratoryjnych). Z tych
+możliwości będziemy korzystali intensywnie podczas kolejnych zajęć.
+
+Maszynę możemy wyłączyć, pisząc, jak to zwykle w Linuksie:
+
+sudo poweroff
+
+Możemy też zapisać jej stan: gdy spróbujemy zamknąć okienko, VirtualBox
+spyta nas, co chcemy zrobić. "Power off the machine" to bardzo brutalna
+opcja odpowiadająca wyłączeniu kabla zasilającego, tracimy co najmniej
+wszystkie niezapisane zmiany. "Send the shutdown signal" wysyła
+sygnał zakończenia. Za to "Save the machine state" zapisze na
+dysku stan pamięci naszej maszyny. Na liście będzie ona miała stan
+"Saved", a po ponownym uruchomieniu na ekranie (czyli w okienku)
+pojawi się to, co było na nim przed zapisaniem stanu.
+
+** Logowanie się przez SSH
+
+Podczas pracy w laboratorium zwykle wystarczy nam korzystanie z
+maszyny za pośrednictwem konsoli w okienku wyświetlanym przez program
+VirtualBox. Można jednak zauważyć, że teksty tam wyświetlanie nie są
+przewijane tak płynnie, jak w zwykłym okienku terminala. Szczęśliwie
+nasza maszyna posiada uruchomiony serwer SSH, możemy więc skorzystać
+ze zwykłego terminala do połączenia z nią. Żeby jednak nie było zbyt
+prosto, nie możemy się podłączyć bezpośrednio do maszyny. Wynika to ze
+specyfiki laboratoryjnej konfiguracji programu VirtualBox. Szczegóły
+techniczne dla zainteresowanych - poniżej. Aby podłączyć się do
+maszyny, należy na komputerze, na którym uruchomiliśmy program
+VirtualBox, uruchomić polecenie:
+
+ssh mimuw@localhost -p 2001
+
+które po chwili powinno skutkować pytaniem:
+
+mimuw@localhost's password:
+
+na które odpowiedź już znamy.
+
+Jeśli połączenie się nie powiedzie, to zwykle oznacza, że jakiś inny
+program zajął port, z którego korzysta nasza maszyna (w tym
+przypadku - 2001). Niestety, VirtaulBox w ogóle nas nie informuje o
+tym, że coś mu się nie udało, więc musimy spróbować samemu ustalić, co
+się dzieje. Wpisujemy więc zaklęcie:
+
+netstat -tapn | grep :2001
+
+i na ekranie wypisuje się np.:
+
+tcp        0      0 0.0.0.0:2001            0.0.0.0:*               LISTEN      4360/nc
+
+Jeśli mamy szczęście, to ostatnia kolumna zawiera numer procesu i jego
+nazwę - jest to proces, który zajmuje potrzebny nam port. Możemy się
+go wówczas pozbyć. Jeśli mamy mniej szczęścia, to proces, który
+zajmuje nasz port został uruchomiony przez kogoś innego. W takim
+wypadku i tak nie mamy się go jak pozbyć, więc możemy zrezygnować z
+korzystania z SSH albo przekonfigurować maszynę.
+
+Aby przekonfigurować maszynę, musimy najpierw wybrać jakiś wolny port,
+czyli liczbę z przedziału 1025-65535, powiedzmy 17017. Upewnić się, że
+wylosowany port jest wolny możemy, pisząc znowu:
+
+netstat -tapn | grep :17017
+
+i jeśli tym razem na wyjściu nie pojawią się informacje zbliżone do
+tych dla portu 2001, to znaczy, że wybraliśmy dobrze. Należy wówczas
+wpisać następujące zaklęcia, których sensu nie ma sensu w tym momencie
+wyjaśniać:
+
+VBoxManage modifyvm sikvm2016 --natpf1 delete "Rule 1"
+VBoxManage modifyvm sikvm2016 --natpf1 "Rule 1",tcp,,17017,,22
+
+Niestety, żeby to się udało, to maszyna musi być zatrzymana. Dla
+działającej maszyny trzeba wpisać:
+
+VBoxManage controlvm sikvm2016 natpf1 delete "Rule 1"
+VBoxManage controlvm sikvm2016 natpf1 "Rule 1",tcp,,17017,,22
+
+Uwaga: możemy, to również zrobić poprzez graficzne okienko
+VirtualBox. Należy wybrać Network, następnie Adapter 1, potem Advanced
+i wreszcie Port Forwarding, gdzie zmieniamy numer portu (np. 2001 na 17017).
+
+Po takiej operacji podłączamy się przez SSH do świeżo skonfigurowanego
+portu:
+
+ssh mimuw@localhost -p 17017
+
+Jeśli takie operacje nie pomogą, to zapewne popsute jest coś innego.
+Trzeba wówczas poprosić o pomoc prowadzącego albo wyszukiwarkę internetową.
+
+** Niewpisywanie hasła przy logowaniu przez SSH
+
+Wpisywanie hasła przy każdym logowaniu może być odrobinę męczące, więc
+pozbędziemy się tej konieczności. W tym celu wygenerujemy sobie klucze
+umożliwiające dostęp. Jeśli robiliśmy to już kiedyś, to w katalogu
+~/.ssh będziemy już mieli pliki id_rsa i id_rsa.pub; wówczas lepiej
+nie generować ich ponownie, bo stracimy dostęp do wcześniej
+skonfigurowanych kont. Jeśli tych plików nie ma, to na konsoli piszemy:
+
+ssh-keygen
+
+i, odpowiadając na pytania programu, trzy razy wciskamy enter.
+Otrzymujemy wymienione wyżej pliki. Teraz musimy skopiować je na dysk 
+naszej maszyny. Możemy w tym celu użyć polecenia, które zrobi to za nas 
+automatycznie:
+
+ssh-copy-id -p 2001 mimuw@localhost
+
+Po tej operacji, gdy spróbujemy się zalogować na maszynie wirtualnej:
+
+ssh mimuw@localhost -p 2001
+
+to nie powinniśmy być pytani o hasło. Jeśli coś nie zadziałało, to -
+po sprawdzeniu praw dostępu itp. - trzeba spytać któregoś z kolegów,
+prowadzącego albo wyszukiwarkę.
+
+Warto też zauważyć, że logowanie się bez hasła jest dość wygodne, ale
+nie jest bardzo bezpieczne. Jeśli włamywacz uzyska dostęp do naszego
+konta, to wystarczy, że skopiuje plik id_rsa i będzie mógł bez użycia
+hasła logować się na wszystkie maszyny, na których ten klucz jest
+wpisany do authorized_keys. Zapewne nie przejmiemy się zanadto, gdy
+ktoś uzyska dostęp do naszych wspaniałych maszyn wirtualnych, ale w
+"prawdziwym życiu" lepiej jest jednak wygenerować klucz zabezpieczony
+skomplikowanym hasłem. Wtedy jednak znowu musimy wpisywać hasło, więc
+mogłoby się wydawać, że wróciliśmy do punktu wyjścia. Okazuje się
+jednak, że wystarczy skorzystać z programów ssh-agent i ssh-add, żeby
+hasło wpisywało się tylko jednokrotnie. Ale ten temat jest już dość
+odległy od sieci, a bliski bezpieczeństwu. A to już inny przedmiot.
+
+** Tworzenie wygodnej nazwy dla połączenia ssh
+Jeżeli nie chcemy za każdym razem pisać
+
+ssh mimuw@localhost -p 2001
+
+i nie chcemy pamiętać numeru portu który nadaliśmy naszej maszynie, to możemy
+stworzyć wygodniejszą nazwę dla takiego połączenia. W tym celu tworzymy plik
+~/.ssh/config (najlepiej z prawami dostępu 600) i wpisujemy tam konfigurację
+naszego połączenia:
+
+cat > ~/.ssh/config <<EOF
+Host mojavm
+ HostName localhost
+ Port 2001
+ User mimuw
+
+EOF
+chmod 600 ~/.ssh/config
+
+Teraz możemy dostać się do naszej maszyny pisząc:
+
+ssh mojavm
+
+** Uruchomienie maszyny bez konsoli
+
+Skoro na maszynie logujemy się, korzystając z SSH, to być może w ogóle
+nie potrzebujemy interfejsu graficznego, czyli okienka wyświetlającego
+konsolę maszyny. Naszą maszynę możemy uruchomić następująco:
+
+VBoxHeadless -s sikvm2016
+
+i wówczas do korzystania z maszyny nie potrzebujemy terminala
+graficznego. Możemy więc, przykładowo, zalogować się na laboratoryjnym
+komputerze z domu, korzystając z SSH, uruchomić na nim maszynę
+wirtualną i do niej zalogować się, korzystając raz jeszcze z SSH.
+
+Ponieważ rozłączenie połączenia spowoduje wyłączenie maszyny
+wirtualnej, co może się skończyć uszkodzeniem danych na wirtualnym
+dysku, warto się przed tym choć odrobinę zabezpieczyć, uruchamiając
+maszynę w programie screen (patrz man screen). Nie jest też dobrze
+wyłączać maszynę za pomocą zabicia programu VBoxHeadless (np. przez
+Ctrl+C), bo wówczas też możemy stracić dane z maszyny. Aby zakończyć
+pracę z maszyną, możemy albo ją zatrzymać (sudo halt po zalogowaniu na
+maszynę), albo poprosić program VirtualBox, żeby zapisał stan maszyny
+na dysk:
+
+VBoxManage controlvm sikvm2016 savestate
+
+** Uruchamianie kilku maszyn
+
+Aby stworzyć sieć komputerową, potrzebnych jest kilka komputerów. Nasza
+sieć i komputery będą wirtualne, potrzebujemy więc kilku maszyn
+wirtualnych. Najprostszą metodą jest zaimportowanie maszyny kolejny
+raz. Zostanie jej wówczas nadana nowa nazwa (np. sikvm2016_1 zamiast
+sikvm2016). Warto również zaznaczyć pole "Reinitialize the MAC address of
+all network cards", bo inaczej adresy pozostaną niezmienione i nasza
+sieć nie będzie działać poprawnie. Warto też zmienić, wg przepisu
+powyżej, numer portu związanego z SSH w nowo zaimportowanej maszynie.
+W przeciwnym przypadku przez SSH będziemy się mogli podłączyć co najwyżej
+do jednej maszyny jednocześnie, konkretnie do pierwszej uruchomionej.
+
+Zamiast ponownie importować maszynę, możemy utworzyć kopię istniejącej
+maszyny, korzystając z poleceń:
+
+VBoxManage clonevm sikvm2016 --name sikvm2016_1 --register
+
+gdzie sikvm2016 to nazwa starej maszyny, a sikvm2016_1 - nowej. Kopię można też
+utworzyć w okienku programu VirtualBox, a import uruchomić z linii
+poleceń.
+
+Wadą powyższych rozwiązań jest to, że teraz maszyny zajmują nam dwa
+razy więcej miejsca na dysku, chociaż dane na ich dyskach są początkowo
+identyczne, a potem - przy naszych zastosowaniach - nie będą się
+różniły znacząco. Jeśli nie brakuje nam miejsca na dysku, to nie
+należy się tym przejmować, w innym wypadku trzeba jednak stworzyć
+tzw. powiązane klony (ang. linked clones).
+
+Stworzymy bazowy obraz dysku, dzielony między maszynami, a potem kilka
+maszyn, które będą korzystały z tego obrazu oraz własnych, najlepiej
+niewielkich, obrazów różnicowych. Przyjmijmy, że mamy dopiero co
+zaimportowaną maszynę o nazwie sikvm2016. Teraz, żeby utworzyć ów bazowy
+obraz dysku, można skorzystać z polecenia:
+
+VBoxManage snapshot sikvm2016 take sikvm2016-snapshot-for-linking
+
+Następnie, żeby utworzyć powiązany klon tej maszyny, wykonujemy takie
+polecenia, które możemy powtórzyć w celu utworzenia większej liczby
+klonów:
+
+VBoxManage clonevm sikvm2016 --snapshot sikvm2016-snapshot-for-linking --name sikvm2016_1 --options link --register
+
+Opcja tworzenia powiązanych klonów jest też dostępna w interfejsie
+graficznym. Wystarczy wybrać maszynę do sklonowania, następnie
+w menu uruchomić Machine -> Clone... i w drugim kroku kreatora
+zażyczyć sobie utworzenia powiązanego klonu (Linked clone).
+
+Teraz możemy uruchomić każdą z maszyn jednocześnie, a obrazy ich
+dysków są - przynajmniej początkowo - istotnie mniejsze, niż po
+sklonowaniu całej maszyny. Można to zobaczyć w okienku Virtual Media
+Manager.
+
+Należy pamiętać, że tworząc klon maszyny, jej adres MAC oraz numer portu, 
+na którym skonfigurowaliśmy SSH pozostają niezmienione, co uniemożliwa
+poprawną pracę przy jednoczesnym uruchomieniu klonu oraz maszyny oryginalnej. 
+Po sklonowaniu maszyny należy przejść do jej ustawień, następnie wybrać 
+ustawienia sieci oraz rozwinąć pole "zaawansowane". Przy polu z numerem MAC 
+należy kliknąć w ikonę generowania nowego numeru MAC. Następnie należy zmienić 
+lokalny numer portu na który przekierowana jest usługa SSH (korzystając 
+z wcześniej przedstawionej instrukcji)
+
+** Szczegóły połączenia przez SSH
+
+Obiecane szczegóły techniczne połączenia SSH (których pewnie w tej chwili
+nie da się sensownie opowiedzieć) powinny wyjaśnić się pod koniec semestru.
+Więcej o SSH będzie też na przedmiocie Bezpieczeństwo systemów komputerowych.

@@ -1,0 +1,4 @@
+/Users/kamil/dev/SIK/scenariusze/10.gniazda-niskopoziomowo/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/Users/kamil/dev/SIK/scenariusze/10.gniazda-niskopoziomowo/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/kamil/dev/SIK/scenariusze/10.gniazda-niskopoziomowo/cmake-build-debug/CMakeFiles/spoofping.dir
+/Users/kamil/dev/SIK/scenariusze/10.gniazda-niskopoziomowo/cmake-build-debug/CMakeFiles/rawping.dir

@@ -1,0 +1,121 @@
+Drogie Studentki, Drodzy Studenci,
+
+rozpoczynamy kurs Sieci Komputerowych.
+
+W imieniu wszystkich prowadzących witam Was serdecznie i życzę, żebyście
+po naszych zajęciach radzili sobie z zagadnieniami sieciowymi istotnie lepiej
+niż na początku.
+
+A niniejszy list piszę, żeby ustalić zasady pracy na zajęciach oraz kryteria
+zaliczania, które wierzymy, że pomogą w osiągnięciu powyższego celu.
+
+0. Oczekujemy systematyczności, dlatego też przygotowaliśmy kartkówki
+   i zadania rozłożone przez cały semestr. Wierzymy, że w ten sposób
+   ułatwiamy Wam systematyczną pracę i dzięki temu skuteczniejszą naukę.
+
+1. Co tydzień w poniedziałek będziemy publikować scenariusze zajęć
+   laboratoryjnych, w publicznym folderze na maszynie students:
+
+   /home/students/inf/PUBLIC/SIK/scenariusze/
+
+   Znajduje się tam już scenariusz pierwszych zajęć.
+
+2. W tym samym miejscu, w folderze 'slajdy' znajdą się prezentacje z wykładów.
+
+3. W serwisie szkopul.edu.pl będzie miejsce na zadawanie pytań do treści
+   zadań zaliczeniowych.
+
+   Ażeby dołączyć do odpowiedniego “konkursu”, należy użyć poniższego linku:
+
+   https://szkopul.edu.pl/c/sik2017l/join/8042hSE6trjJ-nHlkxlr537r/
+   
+4. W semestrze będą następujące okazje do zdobywania punktów:
+   
+   a) kartkówka na 4. zajęciach laboratoryjnych, obejmująca materiał
+      pierwszych trzech wykładów -- 1 p.
+
+   b) zadanie nr 1, polegające na zaprogramowaniu niewielkiego serwera
+      sieciowego -- 2 p.
+
+   c) zadanie nr 2, tj. duże zadanie zaliczeniowe, programistyczne -- 6 p.
+
+   d) zadanie nr 3, pisemne, polegające na zaprojektowaniu sieci wg podanego
+      scenariusza -- 1 p.
+   
+   e) egzamin z całości materiału wykładowego -- 10 p.
+
+5. Duże zadanie zaliczeniowe będzie składało się z dwóch części, części A
+   za 2 p., części B za 3p. Dodatkowy punkt będzie można zdobyć za połączenie
+   obydwu części.  Zadanie będzie tak przygotowane, żeby można było wybrać
+   dowolny podzbiór zbioru {A, B}. Chcemy, żebyście mogli wybrać taką
+   "wielkość" zadania, z jaką będziecie gotowi się zmierzyć.
+
+   Szczegółowe zasady oceny dużego zadania podamy wraz z jego publikacją,
+   około siódmych zajęć.
+
+6. Rozwiązania zadań oddaje się przez umieszczenie ich w następującym
+   folderze na maszynie students:
+
+   /home/students/inf/PUBLIC/SIK/students/ab123456/zadanieN
+
+   w terminie podanym w treści zadania.
+
+   Na pierwszych zajęciach każdy powinien sprawdzić, czy ma dostęp do tej
+   lokalizacji.
+
+7. Ponadto można zdobyć do 1.5 p. za aktywność na laboratoriach.
+   W niektórych scenariuszach będą przygotowane małe zadania.
+   Za wykonanie każdego z nich przysługuje 0.3 p., nie więcej jednak niż
+   w sumie 1.5 p. przez cały semestr.
+
+   Są to punkty dodatkowe. Przy obliczaniu progów nie są uwzględnione w
+   maksymalnej możliwej punktacji. A zatem można mieć 1.5 p. ponad max.
+
+   Planujemy, że okazja do zdobycia punktów będzie na zajęciach nr 3, 5, 6, 7,
+   8, 9, 10, 11, 12. Lista ta może jednak ulec zmianie.
+
+8. Ażeby uzyskać zaliczenie laboratoriów, a zarazem dopuszczenie do egzaminu,
+   trzeba zdobyć co najmniej 5 p. (punkty za aktywność też się liczą).
+   Dotyczy to obydwu terminów.
+
+   Te punkty muszą pojawić się w USOS-ie przed godz. 17:00 w dniu
+   poprzedzającym egzaminy. Na tej podstawie będę przygotowywał listy osób
+   dopuszczonych do egzaminu.
+
+   Ażeby zaliczyć przedmiot, trzeba ponadto otrzymać niezerową liczbę punktów
+   z egzaminu.
+
+   Aby zaliczyć przedmiot, nie wystarczy mieć 5 pkt. z labów i 1 z egzaminu.
+   Są to warunki konieczne, acz nie są dostateczne.
+
+9. W II terminie można poprawiać tylko duże zadanie zaliczeniowe oraz egzamin.
+
+   Można poprawić duże zadanie zaliczeniowe i już nie przychodzić na egzamin
+   poprawkowy.
+
+   Przy oddawaniu dużego zadania zaliczeniowego w II terminie nie będą
+   obowiązywać ujemne punkty za spóźnienia.
+
+A. Progi punktowe na poszczególne oceny podane są w USOS-ie:
+
+   https://usosweb.mimuw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&kod=1000-214bSIK
+
+   Algorytm sumowania punktów można obejrzeć też w USOS-ie, w dziale
+   "Sprawdziany", przez kliknięcie w link "pokaż szczegóły" przy odpowiednich
+   pozycjach.
+
+   Progi w II terminie są inne niż w I: ocena jest o pół stopnia niższa,
+   za wyjątkiem oceny dostatecznej. Zależy nam bowiem na tym, żeby z jednej
+   strony nie utrudniać zaliczenia przedmiotu w II terminie, lecz premiować
+   lepszą oceną tych, którzy pracowali na bieżąco. Nie chcemy, żeby niższe
+   progi dotyczyły tych, którzy z istotnych przyczyn nie mogli przyjść na
+   egzamin w I terminie oraz nie poprawiają dużego zadania. W takiej sytuacji
+   proszę o niezwłoczny kontakt, jeszcze przed egzaminem, jeśli to możliwe.
+
+B. Niniejszy list można też przeczytać w publicznym folderze przedmiotu na
+   students:
+   
+   /home/students/inf/PUBLIC/SIK/
+
+Powodzenia!
+Szymon Acedański

@@ -1,0 +1,1 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  -Wall -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/nadajnik.dir/fifo.cpp.o CMakeFiles/nadajnik.dir/set.cpp.o CMakeFiles/nadajnik.dir/nadajnik.cpp.o CMakeFiles/nadajnik.dir/argument_parser.cpp.o CMakeFiles/nadajnik.dir/err.cpp.o  -o nadajnik 

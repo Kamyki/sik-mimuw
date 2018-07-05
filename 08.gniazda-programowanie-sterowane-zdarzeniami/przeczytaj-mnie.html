@@ -1,0 +1,416 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<head>
+<title>libevent</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .tag    { background-color: #add8e6; font-weight:normal }
+  .target { }
+  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
+  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
+  .center {margin-left:auto; margin-right:auto; text-align:center;}
+  .keyword {color:green;}
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  dt { font-weight: bold; }
+  div.figure { padding: 0.5em; }
+  div.figure p { text-align: center; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size:smaller }
+  .code-highlighted {background-color:#ffff00;}
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+  /*]]>*/-->
+</style>
+</head>
+
+<body>
+<h1 class="title">libevent</h1>
+
+<h2>Spis treści</h2>
+
+<ul>
+<li><a href="#sec-1">1 Biblioteka libevent, programowanie sterowane zdarzeniami i coś w rodzaju protokołu </a>
+<ul>
+<li><a href="#sec-1_1">1.1 Wstęp </a></li>
+<li><a href="#sec-1_2">1.2 Instalacja biblioteki </a></li>
+<li><a href="#sec-1_3">1.3 Przykład prostego użycia </a></li>
+<li><a href="#sec-1_4">1.4 Bufory, czyli coś na nieco wyższym poziomie </a></li>
+</ul>
+</li>
+</ul>
+
+<h2 id="sec-1">1. Biblioteka libevent, programowanie sterowane zdarzeniami i coś w rodzaju protokołu</h2>
+
+<h3 id="sec-1_1">1.1 Wstęp </h3>
+
+<p>Dziś zajmiemy się używaniem biblioteki <code>libevent</code>, która nieco 
+ułatwi nam pisanie programów obsługujących wiele połączeń w pojedynczym wątku
+czy procesie. Biblioteka ta opakowuje dostępne w różnych systemach
+operacyjnych funkcje służące efektywnej obsłudze zdarzeń i udostępnia
+jednolity interfejs programistyczny. <em>Zdarzeniami</em> będziemy nazywać
+wystąpienie związanej z deskryptorem pliku sytuacji takiej, jak
+rozpoznawana przez przedstawione w zeszłym tygodniu 
+funkcje <code>select()</code> i <code>poll()</code>.</p>
+
+<p>Te funkcje nie są, wbrew pozorom, szczytem osiągnięć w dziedzinie
+szybkiej obsługi wielu połączeń jednocześnie. Związany jest z nimi
+problem, który w niektórych scenariuszach użycia może być bardzo
+poważny: przy każdym wywołaniu funkcji musimy przekazywać do niej
+kompletny zbiór interesujących nas deskryptorów. W wielu przypadkach
+zbiór ten jest dość statyczny: może w nim być wiele tysięcy
+deskryptorów, a po obsłużeniu zdarzenia dodajemy lub usuwamy
+pojedyncze deskryptory. Mimo to za każdym razem do wywołania funkcji
+musimy przekazywać kompletny zbiór deskryptorów, który jądro
+pracowicie kopiuje do swojej przestrzeni adresowej, by móc z niego
+skorzystać.</p>
+
+<p>Problem ten można rozwiązać np. następująco: stworzyć wywołanie
+systemowe, które będzie alokować w przestrzeni jądra obiekt związany z
+oczekiwaniem, drugie, które będzie modyfikować zbiór deskryptorów
+powiązany z tym obiektem, i trzecie, odpowiadające wywołaniu
+<code>select()</code> dla tego zbioru deskryptorów. Wówczas nowe elementy 
+zbioru dodajemy, a niepotrzebne usuwamy za pomocą drugiej funkcji, a jądro
+przechowuje te informacje pomiędzy wywołaniami trzeciej funkcji. Przypadkowo 
+takie funkcje istnieją w Linuksie, nazywają się <code>epoll_create()</code>, 
+<code>epoll_ctl()</code> i <code>epoll_wait()</code>.</p>
+
+<p>Niestety, w przeciwieństwie do omawianych w zeszłym tygodniu
+<code>select()</code> i <code>poll()</code>, te funkcje są niestandardowe 
+i są dostępne tylko w Linuksie. Inne systemy operacyjne mają własne
+rozwiązania pozwalające osiągnąć podobne efekty. Właśnie w związku z
+tymi różnicami między systemami powstała biblioteka <code>libevent</code>, 
+która pozwala nam korzystać z najlepszych dostępnych w danym systemie
+rozwiązań za pomocą jednolitego interfejsu.</p>
+
+<h3 id="sec-1_2">1.2 Instalacja biblioteki</h3>
+
+<p>Biblioteka <code>libevent</code> jest dostępna na stronie
+<a href="http://libevent.org/">http://libevent.org/</a> i zainstalowana 
+w laboratorium studenckim.</p>
+
+<h3 id="sec-1_3">1.3 Przykład prostego użycia</h3>
+
+<p>Stworzymy serwer, który będzie obsługiwał wiele połączeń
+równocześnie. Jego działanie będzie jak zwykle polegało na odbieraniu
+połączeń i wypisywaniu na ekran przysyłanych tekstów.</p>
+
+<p>Standardowe programy korzystające z biblioteki <code>libevent</code> mają
+następującą strukturę:</p>
+<ol>
+<li>Inicjowanie:
+  <ul>
+  <li>przygotowanie kontekstu (<code>struct event_base *</code>),</li>
+  <li>stworzenie gniazda, na którym odbierane będą połączenia,</li>
+  <li>stworzenie zdarzenia (<code>struct event *</code>) do odbierania 
+    połączeń.</li>
+  </ul>
+</li>
+<li>Wywołanie funkcji <code>event_base_dispatch()</code>, czyli uruchomienie 
+  pętli dostarczającej zdarzenia.</li>
+<li>Obsługa zdarzeń w napisanych przez nas funkcjach.</li>
+<li>Zakończenie działania <code>event_base_dispatch()</code> i sprzątanie.</li>
+</ol>
+
+<p>Porównując to ze strukturą programu <code>poll_server.c</code> z poprzednich
+zajęć, widać, że cała pętla <code>do</code> &hellip; <code>while</code> 
+jest zastąpiona wywołaniem <code>event_base_dispatch()</code>, które 
+wywołuje zdefiniowane przez nas funkcje obsługujące poszczególne zdarzenia.</p>
+
+<p>Z obsługą zdarzeń związany będzie kontekst typu 
+<code>struct event_base *</code>.  Wszystkie zdarzenia występują w jakimś 
+kontekście, najprościej jest go stworzyć wywołaniem</p>
+
+<pre>
+<span class="keyword">struct</span> <span style="color: #204a87;">event_base</span> *<span style="color: #b35000;">base</span> = event_base_new();
+</pre>
+
+<p>Centralnym pojęciem będzie zdarzenie. Wystąpienie zdarzenia będzie
+odpowiadało zmianie stanu deskryptora w omawianej w zeszłym tygodniu
+funkcji <code>poll()</code>. Tworząc zdarzenie, będziemy określali funkcję, 
+która ma zostać wywołana (z wnętrza <code>event_base_dispatch()</code>) 
+po wystąpieniu zdarzenia.</p>
+
+<p>Zwykłe zdarzenia będą związane z deskryptorem pliku, rodzajem
+zdarzenia (tj. odczyt/zapis itp.) i funkcją wywoływaną po wystąpieniu
+zdarzenia. Możemy też - zwykle będziemy to robić - związać ze
+zdarzeniem dowolne dodatkowe dane, przechowywane jako wskaźnik typu
+<code>void *</code>. Zdarzenia przechowujemy w następującej strukturze 
+danych:</p>
+
+<pre>
+<span class="keyword">struct</span> <span style="color: #204a87;">event</span>;
+</pre>
+
+<p>Jej zawartość będzie dla nas niedostępna, będziemy się posługiwali
+wyłącznie wskaźnikami do instancji tej struktury i funkcjami
+operującymi na tych wskaźnikach. Aby stworzyć nowe zdarzenie,
+korzystamy z funkcji <code>event_new()</code>, która zaalokuje pamięć na
+strukturę zdarzenia i wypełni ją wg naszego polecenia. Wywołanie może 
+wyglądać następująco:
+</p>
+
+<pre>
+<span class="keyword">struct</span> <span style="color: #204a87;">event</span> *<span style="color: #b35000;">listener_socket_event</span> = 
+  event_new(base, listener_socket, EV_READ|EV_PERSIST, listener_socket_cb, (<span style="color: #204a87;">void</span> *)base);
+</pre>
+
+<p>Pierwszy parametr funkcji to kontekst typu 
+<code>struct event_base *</code>. Nasze zdarzenie będzie dotyczyło gniazda 
+<code>listener_socket</code>, interesuje nas możliwość odczytania danych 
+z gniazda (<code>EV_READ</code>), po wystąpieniu zdarzenia ma być wywoływana 
+funkcja <code>listener_socket_cb()</code>, a dodatkowym parametrem ma być 
+wartość wskaźnika <code>base</code>. <code>EV_PERSIST</code> oznacza, 
+że chcemy, by zdarzenie pozostało aktywne po wystąpieniu, tj. żeby 
+po każdorazowym odczycie nie trzeba było ponownie dodawać go do zbioru. 
+Dobrze jest wiedzieć, że operacja <code>accept()</code> jest traktowana 
+jako odczyt z gniazda, czyli gdy w powyższym wywołaniu 
+<code>listener_socket</code> jest niepołączonym gniazdem TCP, 
+to w <code>listener_socket_cb()</code> będziemy mogli wywołać bezpiecznie 
+<code>accept()</code>, wiedząc, że ktoś czeka na połączenie.</p>
+
+<p>Funkcja <code>listener_socket_cb()</code> może być zadeklarowana 
+następująco:</p>
+
+<pre>
+<span style="color: #204a87;">void</span> <span style="color: #a40000;">listener_socket_cb</span>(<span style="color: #204a87;">evutil_socket_t</span> <span style="color: #b35000;">sock</span>, <span style="color: #204a87;">short</span> <span style="color: #b35000;">ev</span>, <span style="color: #204a87;">void</span> *<span style="color: #b35000;">arg</span>);
+</pre>
+
+<p>Pierwszy parametr to gniazdo, dla którego wystąpiło zdarzenie, drugi
+to rodzaj zdarzenia (np. <code>EV_READ</code>), a trzeci - wartość ostatniego
+parametru przekazanego do <code>event_new()</code>. Warto zauważyć, że nie jest
+tu przekazywany wskaźnik do struktury <code>event</code>, która jest związana z
+wywołaniem funkcji. Ponieważ często potrzebujemy się do niej dostać, zwykle 
+ten wskaźnik przekazuje się w polu <code>arg</code> (bezpośrednio lub jako
+pole jakiejś struktury).</p>
+
+<p>Nowo utworzone zdarzenie nie jest aktywne, trzeba je włączyć:</p>
+
+<pre>
+event_add(listener_socket_event, <span style="color: #204a87; font-weight: bold;">NULL</span>);
+</pre>
+
+<p>Drugi argument to czas, po którym zdarzenie ma się przedawnić, 
+<code>NULL</code> oznacza, że nigdy.</p>
+
+<p>Gdy chcemy zdezaktywować zdarzenie, korzystamy z funkcji
+<code>event_del(struct event *)</code>, a skoro już jesteśmy przy sprzątaniu, 
+to zupełnie niepotrzebne zdarzenia po zdeaaktywowaniu powinniśmy zwolnić,
+korzystając z <code>event_free(struct event *)</code>. Można się również 
+pozbyć niepotrzebnego kontekstu (<code>event_base_free()</code>).</p>
+
+<p>Samo włączenie zdarzenia, gdy nie jest aktywna pętla dostarczająca
+zdarzenia (<code>event_base_dispatch()</code>), nie spowoduje wywoływania 
+naszej funkcji. Dopiero wywołanie <code>event_base_dispatch()</code> 
+(lub innej, podobnej funkcji) rozpoczyna dostarczanie zdarzeń.</p>
+
+<p>W przykładowym programie funkcja <code>listener_socket_cb()</code> obsługuje
+zdarzenia związane z gniazdem, na którym oczekujemy na nowe połączenia. 
+Obsługa polega na otwarciu gniazda do obsługi połączenia
+(<code>accept()</code>), stworzenia nowego zdarzenia związanego z tym gniazdem 
+i opisu klienta w tablicy <code>clients</code>. Tym razem dodatkowym 
+parametrem zdarzenia jest wskaźnik na opis klienta.</p>
+
+<p>Obsługa zdarzenia dla gniazda połączonego z klientem odbywa się w
+funkcji <code>client_socket_cb()</code>. Standardowo polega na odczytaniu
+przysłanych danych i wypisaniu ich na ekran. Gdy połączenie zostało
+zakończone (<code>read()</code> zwróciło 0), to dezaktywujemy i usuwamy 
+zdarzenie związane z tym klientem. Do wskaźnika do zdarzenia dostajemy się
+dzięki temu, że jest on zapamiętany w opisie klienta, a wskaźnik do tego 
+opisu jest ostatnim parametrem funkcji <code>client_socket_cb()</code>.</p>
+
+<p>Pętlę obsługi zdarzeń możemy zakończyć za pomocą funkcji
+<code>event_base_loopbreak()</code>.</p>
+
+<p>Zadanie 1. Zmodyfikuj przykładowy program tak, by przesłanie napisu
+<code>"KONIEC"</code> powodowało zakończenie pracy programu.</p>
+
+<p>Zadanie 2. Zmodyfikuj przykładowy program tak, by obsługiwał
+komunikaty przesyłane w nieco innym formacie: najpierw będzie czterobajtowa
+liczba <i>n</i> w porządku sieciowym oznaczająca długość komunikatu, a
+po niej <i>n</i> bajtów komunikatu. Pamiętaj, że zarówno odczytanie długości
+jak i samego komunikatu może wymagać więcej niż jednego wywołania
+<code>read()</code>.</p>
+
+<h3 id="sec-1_4">1.4 Bufory, czyli coś na nieco wyższym poziomie </h3>
+
+<p>Tym razem przykładowy program to klient, który przesyła do serwera
+dane ze swojego wejścia i wypisuje na ekran dane otrzymane z serwera.</p>
+
+<p>Zamiast odczytywać dane bezpośrednio z gniazda skorzystamy z bufora
+utrzymywanego przez bibliotekę. Dzięki temu - o ile tylko w systemie
+będzie wystarczająco dużo pamięci - dane z systemowych buforów
+związanych z gniazdami będą sprawnie kopiowane do przestrzeni naszego
+procesu. Również wysyłanie danych stanie się prostsze, będziemy je
+kopiowali do dostarczonego przez bibliotekę bufora, a ona będzie się
+zajmowała przesyłaniem ich przez sieć, gdy tylko będzie to możliwe.</p>
+
+<p>Takie zachowanie wprowadza dodatkową warstwę pośrednią i zwiększa
+zużycie pamięci. Kopiujemy dane do bufora biblioteki, a dopiero
+później są one przesyłane do systemu operacyjnego. Istnieją jednak
+funkcje, których tu nie będziemy omawiać, a które umożliwiają
+bezpośredni dostęp do pamięci związanej z buforem, co często umożliwia
+pominięcie kopiowania danych. Ponadto, w niektórych systemach
+operacyjnych operacje na buforach są zaimplementowane w taki sposób,
+że to system operacyjny kopiuje dane ze swojej przestrzeni adresowej
+do bufora, co może być wydajniejsze niż wywoływanie <code>read()</code> i
+<code>write()</code>. Podsumowując, wbrew pierwszemu wrażeniu, umiejętne
+korzystanie z buforów może przyspieszyć nasz program.</p>
+
+<p>Zaczynamy, identycznie jak w poprzednim podejściu, od stworzenia
+kontekstu. Następnie możemy ,,ręcznie'' stworzyć gniazdo i powiązać je
+ze zdarzeniami buforowymi. Skorzystamy z innej możliwości i najpierw
+stworzymy zdarzenie, a potem automatycznie utworzymy gniazdo:</p>
+
+<pre>
+<span class="keyword">struct</span> <span style="color: #204a87;">bufferevent</span> *<span style="color: #b35000;">bev</span> = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
+bufferevent_setcb(bev, a_read_cb, <span style="color: #204a87; font-weight: bold;">NULL</span>, an_event_cb, (<span style="color: #204a87;">void</span> *)bev);
+
+<span style="color: #5f615c; font-style: italic;">// </span><span style="color: #5f615c; font-style: italic;">[...]</span>
+
+bufferevent_socket_connect(bev, (<span class="keyword">struct</span> <span style="color: #204a87;">sockaddr</span> *)&amp;sin, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> <span style="color: #204a87;">sockaddr_in</span>));
+bufferevent_enable(bev, EV_READ | EV_WRITE);
+</pre>
+
+<p>Struktura <code>struct bufferevent</code> opisuje zdarzenia związane 
+z buforami i tak, jak w przypadku "zwykłych" zdarzeń, będziemy korzystali 
+ze wskaźnika do jej instancji, bez znajomości ich zawartości. Instancje
+tej struktury tworzy się wywołaniami funkcji
+<code>bufferevent_socket_new()</code>, której parametry to kontekst, 
+deskryptor pliku i dodatkowe opcje. Gdy zamiast deskryptora pliku przekazujemy
+<code>-1</code>, oznacza to, że deskryptor pliku zostanie podany później. 
+Wywołanie tej funkcji powoduje stworzenie struktury opisującej zdarzenia 
+powiązanej z deskryptorem i dwoma buforami -- jednym do przechowywania danych 
+wejściowych, drugim -- wyjściowych. Bufory te są typu 
+<code>struct evbuffer</code>, a wskaźniki do nich możemy uzyskać, 
+korzystając z funkcji <code>bufferevent_get_input(struct bufferevent*)</code> 
+i <code>bufferevent_get_output(struct bufferevent*)</code>. Funkcje 
+operujące na buforach zadeklarowane są w pliku <code>event2/buffer.h</code>. 
+Warto się z nimi zapoznać. My do odczytu i zapisu danych będziemy korzystali 
+z pomocniczych funkcji, które przypominają zwykłe funkcje
+<code>read()</code> i <code>write()</code>. Funkcje te to:
+<code>bufferevent_read(struct bufferevent*, void*, size_t)</code> oraz
+<code>bufferevent_write(struct bufferevent*, const void*, size_t)</code>. 
+Pierwszy parametr to wskaźnik na zdarzenie związane z buforami -- funkcje 
+same wyciągają z niego odpowiedni bufor -- a dwa
+kolejne są takie jak w odpowiadających im wywołaniach systemowych.</p>
+
+<p>Funkcje, które mają zostać wywołane po wystąpieniu zdarzenia, podajemy
+w wywołaniu <code>bufferevent_setcb()</code>. Przekazujemy tam wskaźnik do
+zdarzenia związanego z buforem, wskaźniki do funkcji wywoływanych, gdy
+dostępne są dane do odczytania, gdy zakończy się zapis danych z bufora
+oraz gdy zajdzie jakieś zdarzenie specjalne, np. połączenie albo
+błąd. Ostatni parametr to wskaźnik na dowolne dane.</p>
+
+<p>Samo podanie wskaźników do funkcji nie aktywuje ich, do tego używa się
+funkcji <code>bufferevent_enable()</code>. Do podłączenia się do zdalnego
+komputera możemy skorzystać ze zwykłej funkcji <code>connect</code>, ale żeby
+miało to sens, powinniśmy przestawić gniazdo w tryb nieblokujący; 
+w przeciwnym wypadku zablokujemy działanie programu aż do nawiązania
+połączenia. Zamiast tego, zwłaszcza, że cały czas nie stworzyliśmy
+gniazda, użyjemy dostarczonej przez <code>libevent</code> funkcji
+<code>bufferevent_socket_connect()</code>. Pierwszym parametrem jest 
+zdarzenie związane z buforem, następne dwa są takie jak w systemowym
+<code>connect()</code>. Jeśli przy tworzeniu zdarzenia nie podaliśmy gniazda, 
+to ta funkcja stworzy je dla nas.</p>
+
+<p>Po tych pracach przygotowawczych tworzymy zwykłą pętlę obsługi
+zdarzeń, dokładnie taką jak w serwerze. W przykładowym programie
+przed wejściem do tej pętli tworzymy też zwykłe (niezwiązane z
+buforami) zdarzenie do obsługi danych z wejścia. Nie korzystamy tu z
+buforów, bo dokumentacja mówi, że nie działają one dla deskryptorów
+związanych z łączami, czyli np. takie wywołanie programu:</p>
+
+<pre>
+cat klient.c | ./klient
+</pre>
+
+<p>byłoby niemożliwe. Dociekliwi zauważą, że teraz nie zadziała
+następujące wywołanie:</p>
+
+<pre>
+./klient &lt; klient.c
+</pre>
+
+<p>Jest to spowodowane ograniczeniami funkcji <code>epoll_ctl()</code>, 
+która nie pozwala wstawić do zbioru deskryptorów deskryptora związanego ze
+zwykłym plikiem.</p>
+
+<p>Funkcja obsługująca zdarzenia specjalne otrzymuje trzy argumenty:
+wskaźnik do struktury zdarzenia, liczbę oznaczającą rodzaj zdarzenia
+oraz parametr przekazany do <code>bufferevent_setcb()</code>.</p>
+
+<p>Funkcje obsługujące zdarzenia odczytu i zapisu są podobne do tych
+związanych ze ,,zwykłymi'' zdarzeniami, ale są one wywoływane w nieco
+innych przypadkach. Wywołanie funkcji związanej z odczytem następuje
+wówczas, gdy w buforze pojawią się <i>nowe</i> dane. Funkcje obsługi
+,,zwykłych'' zdarzeń standardowo były wywoływane, gdy system operacyjny
+<em>przechowywał</em> dane, które można było odczytać z użyciem
+deskryptora. Różnica występuje wtedy, gdy w naszej funkcji nie
+odczytamy wszystkich danych, które są dostępne. Przykładowo, jeśli w
+buforze znajdzie się 8 bajtów danych, a my w odpowiedzi na wystąpienie
+zdarzenia (czyli wywołanie naszej funkcji) odczytamy tylko 4, to i tak
+nasza funkcja nie zostanie wywołana ponownie, chyba że w buforze
+znajdą się nowe dane. W przypadku ,,zwykłych'' zdarzeń po odczytaniu
+części danych zdarzenie jest wywoływane ponownie, aż do opróżnienia
+systemowego bufora.</p>
+
+<p>Ilość danych w buforze możemy sprawdzić, wywołując funkcję
+<code>evbuffer_get_length()</code>.</p>
+
+<p>Warto się zastanowić, co się stanie, gdy wykonywać się będzie nasza
+funkcja obsługująca odczyt danych, a w tym samym czasie przysłane
+zostaną nowe dane.</p>
+
+<p>Pytanie 1. Czy nowo przysłane dane znajdą się w naszym buforze i
+będziemy mogli je odczytać z wnętrza aktualnie wykonywanej funkcji
+obsługującej odczyt?</p>
+
+<p>Żeby odpowiedzieć na to pytanie, trzeba się zastanowić, jak wygląda
+przepływ sterowania i skąd się biorą dane w buforze. (Z tego wynika,
+że w jednowątkowym programie nie, dane są dopisywane w wyniku
+wywołania procedury obsługującej ,,zwykłe'' zdarzenia, a żeby taka
+procedura mogła zostać wywołana, to musimy wrócić do pętli
+obsługującej zdarzenia. Za to w wielowątkowym, np. pod Windows przy
+użyciu IOCP dostęp do bufora jest blokowany w czasie działania naszych
+funkcji.)</p>
+
+<p>W naszym kliencie nie ma to większego znaczenia, ale wyobraźmy sobie,
+że nasz program może się dynamicznie podłączać do wielu
+serwerów. Szczęśliwie samo podłączenie już jest asynchroniczne
+(nieblokujące), ale najpierw korzystamy z funkcji <code>getaddrinfo()</code>. 
+Ta funkcja może działać stosunkowo długo, pracowicie poszukując adresów,
+przez co może zablokować aplikację. Istnieje kilka rozwiązań tego
+problemu: możemy skorzystać z asynchronicznej wersji tej funkcji
+(<code>getaddrinfo_a()</code>, niestety nie ma do niej strony podręcznika, 
+ale w sieci można znaleźć informacje na jej temat), możemy stworzyć wątek
+poszukujący adresów i komunikować się z nim przez gniazda lub łącza,
+albo możemy skorzystać z dostarczonej przez <code>libevent</code> 
+asynchronicznej implementacji dostępu do DNS.</p>
+
+<p>Zadanie 3. Popraw przykładowy program, zmieniając poszukiwanie nazwy
+serwera na wersję asynchroniczną.</p>
+
+<p>Poszukiwanie nazw to tylko jeden z przykładów długotrwałych operacji,
+z którymi trzeba sobie jakoś radzić, aby nie opóźniać obsługi innych
+klientów. Można w tym celu stosować funkcje asynchroniczne, tak jak
+zaproponowano powyżej, można też tworzyć pulę wątków obsługujących
+zlecenia, a wówczas wykonanie operacji blokującej w jednym z nich nie
+będzie zatrzymywało działania całej aplikacji.</p>
+
+<p>Zadanie 4. Zmień serwer tak, by korzystał z buforów.</p>
+</body>
+</html>

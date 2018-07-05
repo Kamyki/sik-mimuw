@@ -1,0 +1,18 @@
+Napisz program umożliwiający komunikację między dwoma różnymi komputerami.
+Program wywołuje się poleceniem
+
+./communicator remote-host remote-port local-port
+
+gdzie remote-host to nazwa domenowa lub adres IP drugiego komputera, remote-port
+to numer portu UDP, na którym nasłuchuje ten program na tamtym komputerze,
+a local-port to numer portu UDP, na którym nasłuchuje ten program na tym
+komputerze.
+
+Program w nieskończonej pętli czyta ze standardowego wejścia linie tekstu
+i wysyła je po UDP do drugiego komputera, a jednocześnie nasłuchuje komunikatów
+UDP i ich zawartość wypisuje na standardowe wyjście. Jednoczesność należy
+zaimplementować za pomocą funkcji poll.
+
+UWAGI:
+Rozwiązania można prezentować tylko w trakcie zajęć.
+Zadanie warte jest 0,3 punktu.

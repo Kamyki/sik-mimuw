@@ -1,0 +1,32 @@
+
+Napisz parę programów: klienta i serwer czasu.
+- Klient rozsyła za pomocą broadcast lub multicast komunikat "GET TIME".	
+- Serwer po otrzymaniu tego komunikatu, odsyła klientowi komunikat
+  z bieżącym czasem.
+- Jeśli klient nie otrzyma odpowiedzi od żadnego serwera w ustalonym czasie
+  np. 5 sekund, to ponawia żądanie, przy czym robi to maksymalnie 3 razy.
+  Jeśli nadal nie otrzyma żadnej odpowiedzi, wypisuje stosowny komunikat.
+- Zanim zabierzesz się za implementowanie, zaprojektuj automat stanowy dla
+  klienta i serwera.
+
+Rozbudowana wersja zadania dla chętnych:
+- Uruchamiamy wiele serwerów na rożnych maszynach i powszechnie znanym,
+  ustalonym wspólnym porcie.
+- Każdy z serwerów rozgłasza czas, używając pewnego adresu rozsyłania
+  grupowego (ang. multicast) i numeru portu.
+  Każdy z serwerów używa innej pary adres -- port.
+- Klient rozgłasza (ang. broadcast) prośbę o podawanie czasu. W tym celu
+  wysyła komunikat "GET TIME" na powszechnie znany port serwera.
+- Serwery, które chcą obsługiwać tego klienta, odsyłają komunikat, w którym
+  są zapisane tekstem adres rozsyłania grupowego i numer portu.
+- Klient czeka na odpowiedzi od serwerów przez 20 sekund.
+- Jeśli klient otrzyma co najmniej jedną odpowiedź, to wybiera jedną z nich
+  i uruchamia nasłuchiwanie na otrzymanym adresie i numerze portu.
+- Klient wyświetla otrzymywane komunikaty zawierające czas lub stosowną
+  informację o błędzie.
+- Zanim zabierzesz się za implementowanie, zaprojektuj automat stanowy dla
+  klienta i serwera.
+
+UWAGI:
+Rozwiązania można prezentować tylko w trakcie zajęć.
+Zadanie warte jest 0,3 punktu.

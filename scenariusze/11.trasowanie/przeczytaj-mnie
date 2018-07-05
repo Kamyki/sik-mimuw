@@ -1,0 +1,287 @@
+                           Trasowanie w sieciach IP
+                          ==========================
+Wprowadzenie
+------------
+Na dzisiejszych zajęciach poznamy podstawowe zasady wyznaczania tras 
+(inaczej trasowania, ang. routing) w sieciach IP. Trasowanie to proces 
+kierowania pakietów przez sieci pomiędzy ich źródłem a miejscem przeznaczenia.
+
+Informacje o trasach są przechowywane w tablicy tras w jądrze systemu
+i mają postać reguł. Tablicę tras można obejrzeć, korzystając z poleceń
+route lub netstat -r (opisanych w scenariuszu nr 2).
+
+Przykład
+--------
+students:~$ /sbin/route -n
+
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         193.0.96.31     0.0.0.0         UG    0      0        0 eth0
+10.0.0.0        10.1.0.1        255.0.0.0       UG    0      0        0 eth1
+10.1.0.0        0.0.0.0         255.255.240.0   U     0      0        0 eth1
+193.0.96.0      0.0.0.0         255.255.255.0   U     0      0        0 eth0
+
+Students ma dwa interfejsy sieciowe: 193.0.96.129 (eth0) w sieci 193.0.96.0/24
+i 10.1.0.3 (eth1) w sieci 10.1.0.0/20.
+Wpis drugi tablicy tras mówi o tym, że – aby dotrzeć do sieci 10.0.0.0 –
+pakiet musi zostać przesłany do bramy 10.1.0.1 przez interfejs eth1.
+Pierwszy wpis opisuje trasę domyślną, która informuje o tym, co należy zrobić 
+z pakietami kierowanymi do sieci, dla której nie ma jawnie zdefiniowanej trasy.
+Zostaną one przesłane do urządzenia pełniącego funkcję bramy domyślnej 
+(tutaj: 193.0.96.31).
+--------
+
+Komputer przekazuje pakiety tylko do tych bram, które są bezpośrednio osiągalne
+z tej samej sieci. Rola lokalnego komputera ogranicza się do przesłania pakietów
+o jeden skok (ang. hop) bliżej ich miejsca przeznaczenia. Każda brama, do której
+trafi pakiet, decyduje na podstawie swojej własnej, lokalnej tablicy tras,
+w jaki sposób przesłać pakiety dalej.
+
+Aby przekazać pakiet na określony adres, jądro wybiera najbardziej szczegółową
+z dostępnych tras, czyli tę, która ma najdłuższą maskę. Jeżeli jądro nie 
+znajdzie żadnej trasy, do nadawcy zostanie przesłany komunikat ICMP 
+„network unreachable”.
+
+Tablice tras mogą być konfigurowane statycznie, dynamicznie lub za pomocą
+połączenia obu metod. Trasy statyczne są wyznaczane za pomocą polecenia
+route. Są one najczęściej konfigurowane w czasie uruchamiania systemu 
+przez skrypty startowe.
+
+W stabilnej, lokalnej sieci trasowanie statyczne jest wystarczające.
+Sieci o bardziej skomplikowanej topologii wymagają trasowania dynamicznego,
+które odbywa się przy użyciu demonów modyfikujących w miarę potrzeb tablice 
+tras. Demony trasujące komunikują się ze sobą, aby odkryć topologię sieci
+i określić drogę przesyłania pakietów. Dokładny sposób wyznaczania tras zależy 
+od protokołu trasowania. Powszechnie używa się dwóch rodzajów protokołów: 
+protokołów wektora odległości (np. RIP) i protokołów stanów łączy (np. OSPF).
+Protokoły trasowania, które stosuje się wewnątrz systemu autonomicznego (czyli 
+zarządzanego przez tę samą jednostkę administracyjną) takie jak RIP, czy OSPF 
+nazywamy protokołami trasowania wewnętrznego, w odróżnieniu od protokołów 
+trasowania zewnętrznego stosowanych miedzy systemami autonomicznymi (powszechnie
+stosowanym protokołem tego typu jest BGP).
+
+Ćwiczenie 1
+-----------
+Celem naszego ćwiczenia jest utworzenie sieci złożonej z maszyn wirtualnych 
+H1, H2, R1, R2 zgodnie ze schematem:
+
+         H1                        H2
+         |                         |  
+         |                         |
+      10.10.0.0                 10.11.0.0
+         |                         |
+         |                         |
+         R1--------10.12.0.0-------R2
+
+
+Krok 1 
+------
+Zacznijmy od stworzenia i uruchomienia 4 maszyn wirtualnych i ich podstawowej 
+konfiguracji sieciowej. Sklonuj maszyny, używając opcji "Linked Clone".
+
+Na wszystkich maszynach, korzystając z programu VirtualBox, zmień ustawienia 
+kart sieciowych nr 2, a dla maszyn R1 i R2 również ustawienia kart sieciowych 
+nr 1, na sieci wewnętrzne, zgodnie ze schematem:
+
+        H1                        H2
+         |                         |  
+         |                         |
+      siknet1                   siknet2
+         |                         |
+         |                         |
+         R1---------siknet---------R2
+
+
+Na maszynach H1 i H2 wyłącz interfejsy eth0:
+
+H1:~#ifdown eth0
+H2:~#ifdown eth0
+
+Przypisz odpowiednie adresy poszczególnym interfejsom:
+
+H1: eth1 10.10.10.10/24 
+H2: eth1 10.11.0.10/24
+R1: eth0 10.12.0.1/30
+    eth1 10.10.0.1/24
+R2: eth0 10.12.0.2/30 
+    eth1 10.11.0.1/24
+
+Opcjonalne: możesz zmienić nazwy maszyn poleceniem hostname, a także
+dokonując zmian w plikach /etc/hostname i /etc/hosts.
+
+Krok 2
+------
+Sprawdź, czy możliwa jest komunikacja (ping) w obrębie każdej z podsieci.
+Jeżeli okaże się że nie, znajdź i usuń błędy. 
+
+Przejrzyj zawartość tablic tras na wszystkich maszynach. Wszystkie wpisy, 
+które tam się znajdują, zostały dodane automatycznie w momencie konfigurowania 
+poszczególnych interfejsów.
+
+Krok 3
+------
+Teraz chcielibyśmy zapewnić komunikację między H2 a drugim interfejsem R2.
+
+Przy obecnej konfiguracji po wykonaniu ping z H2 na adres 10.12.0.2
+otrzymujemy komunikat „connect: Network is unreachable”.
+Dzieje się tak dlatego, ponieważ H2 nie wie, dokąd skierować pakiet
+zaadresowany do 10.12.0.2. W swojej tablicy tras ma tylko informację o sieci 
+10.11.0.0.
+
+Niech R2 będzie domyślną bramą dla H2:
+H2:~# route add default gw 10.11.0.1
+
+Tablica tras H2 powinna teraz wyglądać następująco (opcja -n powoduje pominięcie
+odpytywania systemu DNS):
+
+H2:~# route -n 
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+10.11.0.0       0.0.0.0         255.255.255.0   U     0      0        0 eth1
+0.0.0.0         10.11.0.1       0.0.0.0         UG    0      0        0 eth1
+
+Krok 4
+------
+Nasz apetyt rośnie. Dlaczego nie wypróbować połączenia H2 z R1?
+
+H2:~# ping 10.12.0.1
+PING 10.12.0.1 (10.12.0.1) 56(84) bytes of data.
+--- 10.12.0.1 ping statistics ---
+7 packets transmitted, 0 received, 100% packet loss, time 6105ms
+
+Niestety, połączenia brak. Zastanówmy się przez chwilę, co dzieje się 
+z pakietem ICMP wysłanym przez ping. Zgodnie z regułami z tablicy 
+tras zostaje on skierowany do R2. R2 z kolei wie, jak przekazać pakiety 
+do sieci 10.12.0.0. Czy je przekazuje?
+
+Używając tcpdump na R1 i ping na H2, sprawdźmy, czy pakiety od H2 docierają 
+do R1:
+
+R1:~# tcpdump -n -i eth0
+
+Okazuje się, że R1 nie dostaje pakietów z prośbą o echo. Problem polega na tym, 
+że R2 nie przekazuje pakietów pomiędzy swoimi interfejsami (nie pełni funkcji 
+rutera). Aby to umożliwić, należy skonfigurować opcję ip_forward w następujący 
+sposób:
+
+R2:~# echo "1" > /proc/sys/net/ipv4/ip_forward
+
+Po ponownym uruchomieniu tcpdump widzimy, że prośby o echo z H2 docierają
+do R1:
+
+R1:~# tcpdump -n -i eth0
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eth1, link-type EN10MB (Ethernet), capture size 96 bytes
+19:35:36.629841 IP H2.local > R1.local: ICMP echo request, id 53251, seq 1, length 64
+19:35:37.621146 IP H2.local > R1.local: ICMP echo request, id 53251, seq 2, length 64
+
+Niestety, odpowiedzi R1 wciąż nie wracają do H2:
+
+H2:~# ping 10.12.0.1
+PING 10.12.0.1 (10.12.0.1) 56(84) bytes of data.
+--- 10.12.0.1 ping statistics ---
+4 packets transmitted, 0 received, 100% packet loss, time 3112ms
+
+Dlaczego? Sprawdźmy tablicę tras R1:
+
+R1:~# route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+10.12.0.0       0.0.0.0         255.255.255.252 U     0      0        0 eth0
+10.10.0.0       0.0.0.0         255.255.0.0     U     0      0        0 eth1
+
+Wynika z niej, że R1 nie wie, jak wysłać odpowiedź do H2 (10.11.0.10)!
+Musimy zatem poinformować R1, aby pakiety do sieci 10.11.0.0 przekazywał
+na adres 10.12.0.2. W tym celu dodajemy odpowiednią regułę do tablic tras:
+
+R1:~# route add -net 10.11.0.0 netmask 255.255.255.0 gw 10.12.0.2
+
+I cieszymy się, że H2 w końcu udało się odebrać odpowiedź echo od R1.
+
+Krok 5
+------
+Co należy zrobić, aby maszyna H2 mogła łączyć się z H1?
+
+1. Skonfiguruj domyślną bramę na H1.
+2. Włącz przekazywanie pakietów na R1 (opcja ip_forward).
+3. Do tablicy tras R2 dodaj odpowiednią regułę mówiącą,
+gdzie kierować pakiety przeznaczone do sieci 10.10.0.0.
+
+Upewnij się, że jest możliwa komunikacja pomiędzy wszystkimi 
+maszynami w naszej wirtualnej sieci. Prześledź trasę pakietów poleceniem 
+traceroute.
+
+Uwaga: nasz schemat sieci jest na tyle prosty, że wystarczyłaby 
+konfiguracja samych tras domyślnych.
+
+Krok 6
+------
+Wszystkie dokonane zmiany konfiguracji sieciowej są tymczasowe.
+Aby zapamiętać konfigurację (a warto, bo będziemy z niej korzystać również 
+na następnych zajęciach), zapisz ją w plikach /etc/network/interfaces. 
+
+Na maszynie H2: 
+--
+auto lo eth1
+
+iface lo inet loopback
+
+iface eth0 inet dhcp
+
+iface eth1 inet static
+     address 10.11.0.10
+     netmask 255.255.255.0
+     gateway 10.11.0.1
+---
+
+Na maszynie R2:
+--
+auto lo eth0 eth1
+
+iface lo inet loopback
+
+iface eth1 inet static	
+    address 10.11.0.1
+    netmask 255.255.255.0
+
+iface eth0 inet static
+     address 10.12.0.2
+     netmask 255.255.255.252
+     
+up route add -net 10.10.0.0 netmask 255.255.255.0 gw 10.12.0.1
+---
+
+Na pozostałych maszynach analogicznie.
+Klauzula auto określa, które interfejsy będą uruchamiane przy starcie systemu
+lub po wydaniu polecenia ifup -a.
+
+W pliku /etc/sysctl.conf można ustawić na stałe przekazywanie 
+pakietów (należy odkomentować net.ipv4.ip_forward = 1).
+
+Ćwiczenie 2
+-----------
+Zachęcamy do dalszej zabawy. Spróbuj połączyć swoją sieć z siecią
+kolegi. Można to zrobić, dodając do jednej z maszyn pełniących
+rolę rutera dodatkowy interfejs do sieci rzeczywistej (mostkowana 
+karta sieciowa, konfiguracja przez DHCP). Trzeba będzie jednak zmienić
+adresy maszyn w sieciach wirtualnych, aby nie kolidowały ze sobą
+ani z siecią rzeczywistą.
+
+Ściągawka z polecenia route
+---------------------------
+route add —net netaddress netmask mask gw gw_address
+route add —net netaddress netmask mask 
+route add default gw gw_address
+route del —net netaddress netmask mask gw gw_address
+route del default gw gw_address
+
+Rozwiązanie problemu z kroku 2:
+-------------------------------
+Maszyny H1 i R1 nie komunikują się ze sobą, ponieważ adresy 10.10.10.10/24 
+i 10.10.0.1/24 należą do różnych podsieci.
+
+Rozwiązanie: 
+a. zmiana adresu H1 np. na 10.10.0.10 
+lub
+b. zmiana maski podsieci 10.10.0.0 na 255.255.0.0 
+

@@ -1,0 +1,147 @@
+Możliwe rozwiązania dla serwera obsługującego wielu klientów:
+
+0. Obsługa klientów po jednym na raz
+1. Obsługa klientów - każdy w oddzielnym procesie
+2. Obsługa klientów - każdy w oddzielnym wątku
+3. Obsługa klientów - w miarę napływu danych (select lub poll)
+4. Obsługa klientów - pula procesów/watków potomnych
+
+Wariant 0 widzieliśmy na poprzednich zajęciach.
+
+1. Osobne procesy
+-----------------
+
+Obejrzymy teraz wariant 1 ze współbieżnymi serwerami, po jednym dla każdego
+połączenia z klientem.
+
+sock = socket(...);
+bind(sock, ...);
+listen(sock, ...);
+while(1) {
+  fd = accept(sock, ...);
+  switch (fork()) {
+     case 0:
+       serve(fd, ...);
+       close(fd);
+       exit(0);
+     case -1:
+       /* error */
+       break;
+     default:
+       close(fd);
+       /* do NOT wait here */
+  }
+}
+
+Jak unikać tworzenia zombies, jeśli nie chcemy czekać?
+
+#include <signal.h>
+signal(SIGCHLD, SIG_IGN);
+
+We wszystkich dzisiejszych przykładach klient jest taki sam i znajduje
+się w pliku "client.c".  Wszystkie programy kompilujemy, wywołując make.
+
+Serwer dla wariantu 1 jest w pliku "proc_server.c".
+
+Zadania:
+
+1. Doprowadź serwer do takiego stanu, aby nie pojawiały się zombies.
+
+2. Przetestuj kod klienta i serwera na pojedynczym komputerze.
+
+3. Dodaj w serwerze wypisywanie adresu IP i portu klienta, który podłączył
+   się do serwera.
+
+2. Osobne wątki
+---------------
+
+Wariant 2 jest podobny, tylko zamiast procesów mnożymy wątki.
+Pozornie niewielka różnica, ale zmienia to znacząco organizację kodu.
+
+Należy mieć na uwadze, że każdy wątek powinien mieć własne dane, więc
+przekazywane obiekty nie mogą być statyczne.
+
+Zadania dla serwera 2 (plik "thread_server.c"):
+
+4. Przeanalizuj samodzielnie kod serwera.
+
+5. Zmodyfikuj kod serwera, tak aby w sytuacji braku zasobów (pamięć, wątek)
+   zamiast kończyć działanie, informował klienta o niemożliwości podjęcia jego
+   obsługi.  Zadbaj, żeby nie doprowadzić do wycieku pamięci.
+
+3. Odpytywanie (polling)
+------------------------
+
+W wariancie 3 jest tylko pojedynczy proces, ale za to zarządza wieloma
+otwartymi gniazdkami naraz, periodycznie odpytując je.  Można to zrealizować,
+używając wywołań systemowych select() lub poll() -- wybierzemy poll jako
+prostsze.  Opis w pliku "poll.txt".  Bardziej zaawansowane zagadnienia
+(tryb nieblokujący gniazd) zostały opisane w katalogu "nonblocking-socket".
+
+Kod serwera dla równoczesnej obsługi wielu gniazdek znajduje się w pliku
+"poll_server.c".
+
+Zadania:
+
+6. Dodaj możliwość wydawania polecenia po stronie serwera - np. można
+   wprowadzić z klawiatury polecenie ,,ile'' wypisujące liczbę aktualnie
+   podłączonych klientów.
+
+7. Napisz program umożliwiający komunikację między dwoma różnymi komputerami:
+   program czyta ze standardowego wejścia, a to co przeczyta wysyła do drugiego
+   komputera i jednocześnie czyta z połączenia sieciowego, a to co przeczyta
+   wypisuje na standardowe wyjście.
+
+4. Pula procesów lub wątków
+---------------------------
+
+Wariant 4 ma kilka realizacji.  W każdej z nich na początku tworzymy 
+ustalony zbiór procesów lub wątków obsługi.
+
+Najprostsze rozwiązanie pokazuje program z pliku "preforked_server.c".
+Główne gniazdko nasłuchowe otwieramy w procesie głównym jeszcze przed
+utworzeniem puli procesów obsługi -- dzięki temu odziedziczą je po
+wywołaniu fork(). 
+
+Teraz każdy proces w pętli wywołuje (niezależnie od innych) accept()
+i wszystkie czekają na klientów.  Proste, ale niespecjalnie wydajne.
+Gorzej, że działa tylko w tych Unixach, gdzie accept() jest wywołaniem
+systemowym, dzięki czemu jest niepodzielny.  Na szczęście tak jest w Linuxie
+i BSD.
+
+8. Zinstrumentuj nasz program: dodaj zliczanie, ile klientów
+   obsłużył każdy proces.  W obsłudze sygnału należy wypisać
+   podsumowanie.
+
+Lepiej byłoby wołać accept() w procesie głównym i przekazywać otrzymane
+gniazdko wolnemu podwładnemu.  Dla wątków jest to proste: wszystkie mają
+wspólną tablicę deskryptorów, więc wystarczy przekazać numer deskryptora
+np. w zmiennej globalnej (pamiętając o synchronizacji).
+
+Dla procesów jest trudniej, bo wspólne mają tylko te deskryptory, które
+były otwarte podczas fork() -- tablica deskryptorów jest kopiowana.
+Niemniej Unixy potrafią przekazywać deskryptory między procesami,
+używając gniazdek z dziedziny Unixowej, lecz jest to specyficzne obczujnienie 
+jądra.
+
+Deskryptory przekazuje się funkcjami sendmsg() i recvmsg() -- najbardziej
+ogólnymi funkcjami przesyłania dla gniazdek.  Potrafią one
+- przekazać jednym wywołaniem kilka buforów (lub jak kto woli rozproszony
+  bufor)
+- przekazać dodatkową informację sterującą, w naszym przypadku deskryptor.
+Przesyłając deskryptor, trzeba pamiętać, żeby równocześnie przesłać choć
+jeden znak/oktet, inaczej recvmsg() uzna to za koniec pliku.
+
+Istnieje gotowa biblioteka libancillary, zainteresowanych zapraszam na stronę 
+  www.normalesup.org/~george/comp/libancillary
+(uwaga: tamtejszy link do libancillary-0.9.1.tar.gz prowadzi do 
+przestarzałej wersji, należy pobierać aktualną z Gita!)
+albo do rozdziału 15, pkt. 15.7 książki ,,UNIX® Network Programming Volume 1,
+Third Edition: The Sockets Networking API'' autorstwa W. Richard Stevens, 
+Bill Fenner i Andrew M. Rudoff.  W rozdziałach 28 i 30 przykłady
+zastosowań.
+
+Opcjonalne ambitne zadanie:
+
+[9. Zmodyfikuj preforked_server.c tak, żeby tylko proces główny wołał
+    w pętli accept() i przekazywał otrzymane deskryptory podwładnym.]

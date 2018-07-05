@@ -1,0 +1,4 @@
+/Users/kamil/dev/SIK/09.gniazda-UDP-z-wieloma-odbiorcami/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/Users/kamil/dev/SIK/09.gniazda-UDP-z-wieloma-odbiorcami/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/kamil/dev/SIK/09.gniazda-UDP-z-wieloma-odbiorcami/cmake-build-debug/CMakeFiles/multi-send.dir
+/Users/kamil/dev/SIK/09.gniazda-UDP-z-wieloma-odbiorcami/cmake-build-debug/CMakeFiles/multi-recv.dir

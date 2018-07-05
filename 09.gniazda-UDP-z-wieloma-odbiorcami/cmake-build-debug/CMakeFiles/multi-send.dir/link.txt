@@ -1,0 +1,1 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/multi-send.dir/err.c.o CMakeFiles/multi-send.dir/multi-send.c.o  -o multi-send 

@@ -1,0 +1,1 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/nadajnik.dir/nadajnik.c.o CMakeFiles/nadajnik.dir/fifo.c.o CMakeFiles/nadajnik.dir/set.c.o CMakeFiles/nadajnik.dir/argument_parser.c.o CMakeFiles/nadajnik.dir/err.c.o  -o nadajnik 
